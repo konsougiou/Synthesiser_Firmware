@@ -6,7 +6,11 @@
 
 #include "globals.hpp"
 
-volatile uint8_t TX_Message[8] = {0};
+// volatile uint8_t TX_Message[8] = {0};
+uint8_t RX_Message[8] = {0};
+
+QueueHandle_t msgInQ;
+SemaphoreHandle_t CAN_TX_Semaphore;
 
 // Pin definitions
 // Row select and enable
@@ -92,6 +96,30 @@ void setRow(uint8_t rowIdx)
   digitalWrite(REN_PIN, HIGH);
 }
 
+void CAN_RX_ISR(void)
+{
+  uint8_t RX_Message_ISR[8];
+  uint32_t ID;
+  CAN_RX(ID, RX_Message_ISR);
+  xQueueSendFromISR(msgInQ, RX_Message_ISR, NULL);
+}
+
+void CAN_TX_ISR(void)
+{
+  xSemaphoreGiveFromISR(CAN_TX_Semaphore, NULL);
+}
+
+void CAN_TX_Task(void *pvParameters)
+{
+  uint8_t msgOut[8];
+  while (1)
+  {
+    xQueueReceive(msgOutQ, msgOut, portMAX_DELAY);
+    xSemaphoreTake(CAN_TX_Semaphore, portMAX_DELAY);
+    CAN_TX(0x123, msgOut);
+  }
+}
+
 void scanKeysTask(void *pvParameters)
 {
 
@@ -170,7 +198,8 @@ void scanKeysTask(void *pvParameters)
       TX_Message[0] = 80;
     }
 
-    CAN_TX(0x123, (uint8_t *)TX_Message); // Sending the CAN message with scanned keys.
+    // CAN_TX(0x123, (uint8_t *)TX_Message); // Sending the CAN message with scanned keys.
+    xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
 
     __atomic_store_n(&currentStepSize, tmpCurrentStepSize, __ATOMIC_RELAXED);
 
@@ -186,7 +215,7 @@ void displayUpdateTask(void *pvParameters)
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
   uint32_t ID;
-  uint8_t RX_Message[8] = {0};
+  // uint8_t RX_Message[8] = {0};
 
   while (1)
   {
@@ -215,13 +244,13 @@ void displayUpdateTask(void *pvParameters)
     uint8_t tmpKnob3Rotation = __atomic_load_n(&knob3Rotation, __ATOMIC_RELAXED);
     u8g2.println(tmpKnob3Rotation, DEC);
 
-    // while (CAN_CheckRXLevel())
-    //   CAN_RX(ID, RX_Message);
+    while (CAN_CheckRXLevel())
+      CAN_RX(ID, RX_Message);
 
     u8g2.setCursor(66, 30);
-    u8g2.print((char)TX_Message[0]);
-    u8g2.print(TX_Message[1]);
-    u8g2.print(TX_Message[2]);
+    u8g2.print((char)RX_Message[0]);
+    u8g2.print(RX_Message[1]);
+    u8g2.print(RX_Message[2]);
 
     u8g2.sendBuffer(); // transfer internal memory to the display
 
@@ -229,9 +258,59 @@ void displayUpdateTask(void *pvParameters)
   }
 }
 
+void decodeTask(void *pvParameters)
+{
+  const TickType_t xFrequency = 80 / portTICK_PERIOD_MS;
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+
+  bool pressOrReceive = false; // False == Receive, True == Press
+  uint8_t tempRX_Message[8] = {0};
+
+  while (1)
+  {
+    // vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    xQueueReceive(msgInQ, tempRX_Message, portMAX_DELAY);
+
+    xSemaphoreTake(queueReceiveMutex, portMAX_DELAY);
+
+    std::copy(std::begin(tempRX_Message), std::end(tempRX_Message), std::begin(RX_Message));
+
+    xSemaphoreGive(queueReceiveMutex);
+
+    if (RX_Message[0] == 0x50)
+    {
+      pressOrReceive = true;
+      uint32_t dTmpCurrentStepSize = stepSizes[RX_Message[2]] << ((RX_Message[1]) - 4);
+      __atomic_store_n(&currentStepSize, dTmpCurrentStepSize, __ATOMIC_RELAXED);
+    }
+    else
+    {
+      pressOrReceive = false;
+      // Line below is essentially this: currentStepSize = 0;
+      __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
+    }
+  }
+}
+
+void transmitTask(void *pvParameters)
+{
+  const TickType_t xFrequency = 80 / portTICK_PERIOD_MS;
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+
+  while (1)
+  {
+    vTaskDelayUntil(&xLastWakeTime, xFrequency);
+
+    // Have two blocking statements because it must obtain a message from
+    // the queue and take the semaphore before sending the message:
+  }
+}
+
 void setup()
 {
   // put your setup code here, to run once:
+
+  msgInQ = xQueueCreate(36, 8);
 
   // Set pin directions
   pinMode(RA0_PIN, OUTPUT);
@@ -282,11 +361,34 @@ void setup()
       1,                 /* Task priority */
       &scanKeysHandle);
 
+  TaskHandle_t decodeTaskHandle = NULL;
+  xTaskCreate(
+      decodeTask,      /* Function that implements the task */
+      "updateDisplay", /* Text name for the task */
+      256,             /* Stack size in words, not bytes */
+      NULL,            /* Parameter passed into the task */
+      1,               /* Task priority */
+      &decodeTaskHandle);
+
+  TaskHandle_t transmitTaskHandle = NULL;
+  xTaskCreate(
+      transmitTask,    /* Function that implements the task */
+      "updateDisplay", /* Text name for the task */
+      256,             /* Stack size in words, not bytes */
+      NULL,            /* Parameter passed into the task */
+      1,               /* Task priority */
+      &transmitTaskHandle);
+
   // Create the mutex and assign its handle in the setup function
   keyArrayMutex = xSemaphoreCreateMutex();
+  queueReceiveMutex = xSemaphoreCreateMutex();
+
+  CAN_TX_Semaphore = xSemaphoreCreateCounting(3, 3);
 
   CAN_Init(false);
   setCANFilter(0x123, 0x7ff);
+  CAN_RegisterRX_ISR(CAN_RX_ISR);
+  CAN_RegisterTX_ISR(CAN_TX_ISR);
   CAN_Start();
 
   vTaskStartScheduler();

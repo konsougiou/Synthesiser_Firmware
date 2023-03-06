@@ -21,6 +21,7 @@ volatile uint8_t keyArray[7];
 QueueHandle_t msgInQ;
 
 SemaphoreHandle_t keyArrayMutex;
+SemaphoreHandle_t queueReceiveMutex;
 
 uint8_t knob3Rotation = 4;
 
