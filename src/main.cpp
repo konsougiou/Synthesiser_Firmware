@@ -6,7 +6,7 @@
 
 #include "globals.hpp"
 
-// volatile uint8_t TX_Message[8] = {0};
+volatile uint8_t TX_Message[8] = {0};
 
 // Pin definitions
 // Row select and enable
@@ -99,7 +99,7 @@ void scanKeysTask(void *pvParameters)
   TickType_t xLastWakeTime = xTaskGetTickCount();
   uint8_t localKeyArray[7];
 
-  volatile uint8_t TX_Message[8] = {0};
+  // volatile uint8_t TX_Message[8] = {0};
 
   while (1)
   {
@@ -215,13 +215,13 @@ void displayUpdateTask(void *pvParameters)
     uint8_t tmpKnob3Rotation = __atomic_load_n(&knob3Rotation, __ATOMIC_RELAXED);
     u8g2.println(tmpKnob3Rotation, DEC);
 
-    while (CAN_CheckRXLevel())
-      CAN_RX(ID, RX_Message);
+    // while (CAN_CheckRXLevel())
+    //   CAN_RX(ID, RX_Message);
 
     u8g2.setCursor(66, 30);
-    u8g2.print((char)RX_Message[0]);
-    u8g2.print(RX_Message[1]);
-    u8g2.print(RX_Message[2]);
+    u8g2.print((char)TX_Message[0]);
+    u8g2.print(TX_Message[1]);
+    u8g2.print(TX_Message[2]);
 
     u8g2.sendBuffer(); // transfer internal memory to the display
 
@@ -285,7 +285,7 @@ void setup()
   // Create the mutex and assign its handle in the setup function
   keyArrayMutex = xSemaphoreCreateMutex();
 
-  CAN_Init(true);
+  CAN_Init(false);
   setCANFilter(0x123, 0x7ff);
   CAN_Start();
 

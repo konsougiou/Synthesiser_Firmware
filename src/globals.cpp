@@ -18,6 +18,8 @@ volatile uint8_t keyArray[7];
 
 // volatile uint8_t TX_Message[8] = {0};
 
+QueueHandle_t msgInQ;
+
 SemaphoreHandle_t keyArrayMutex;
 
 uint8_t knob3Rotation = 4;
