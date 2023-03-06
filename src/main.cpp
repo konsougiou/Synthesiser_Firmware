@@ -58,7 +58,16 @@ void sampleISR() {
     Vout = 0;
   }
   analogWrite(OUTR_PIN, Vout + 128);
-  }
+}
+
+void pitch(){
+  TIM_TypeDef *Instance = TIM1;
+  HardwareTimer *sampleTimer = new HardwareTimer(Instance);
+
+  sampleTimer->setOverflow(22000, HERTZ_FORMAT);
+  sampleTimer->attachInterrupt(sampleISR);
+  sampleTimer->resume();
+}
 
 uint8_t readCols(){
 
@@ -89,11 +98,12 @@ void scanKeysTask(void * pvParameters) {
   const TickType_t xFrequency = 30/portTICK_PERIOD_MS;
   TickType_t xLastWakeTime = xTaskGetTickCount();
   uint8_t localKeyArray[7];
+  char* keysymbol = 0;
 
   while (1) {
     vTaskDelayUntil( &xLastWakeTime, xFrequency );
 
-    for(uint8_t rowIdx = 0; rowIdx < 5; rowIdx++){
+    for(uint8_t rowIdx = 0; rowIdx < 8; rowIdx++){
       setRow(rowIdx);
 
       delayMicroseconds(3);
@@ -108,6 +118,12 @@ void scanKeysTask(void * pvParameters) {
     xSemaphoreGive(keyArrayMutex);
  
     uint32_t tmpCurrentStepSize = 0;
+
+    //For changing the pitch
+    knob2->setLimits(8, 0);
+    knob2->updateRotation(knob2Rotation);
+    uint32_t stepScaling = (pow(2, 32) / (4000*knob2Rotation));
+
     //extracting the step size
     for(int i = 0; i < 3; i++){
       
@@ -122,24 +138,30 @@ void scanKeysTask(void * pvParameters) {
       uint8_t key1 = (keyGroup % 2);
       uint8_t keyOffset = i * 4;
       if (!key1){
-        tmpCurrentStepSize = stepSizes[keyOffset];
+        tmpCurrentStepSize = stepSizes[keyOffset]*stepScaling;
+        keysymbol = keyOrder[keyOffset];
       }
       if (!key2){
-        tmpCurrentStepSize = stepSizes[keyOffset + 1];
+        tmpCurrentStepSize = stepSizes[keyOffset + 1]*stepScaling;
+        keysymbol = keyOrder[keyOffset+1];
       }
       if (!key3){
-        tmpCurrentStepSize = stepSizes[keyOffset + 2];
+        tmpCurrentStepSize = stepSizes[keyOffset + 2]*stepScaling;
+        keysymbol = keyOrder[keyOffset+2];
       }    
       if (!key4){
-        tmpCurrentStepSize = stepSizes[keyOffset + 3];
+        tmpCurrentStepSize = stepSizes[keyOffset + 3]*stepScaling;
+        keysymbol = keyOrder[keyOffset+3];
       }
     };
 
   __atomic_store_n(&currentStepSize, tmpCurrentStepSize, __ATOMIC_RELAXED);
+  __atomic_store_n(&globalKeySymbol, keysymbol, __ATOMIC_RELAXED);
 
   knob3->setLimits(8, 0);
 
   knob3->updateRotation(knob3Rotation);
+
   }
 }
 void displayUpdateTask(void * pvParameters) {
@@ -172,6 +194,12 @@ void displayUpdateTask(void * pvParameters) {
     u8g2.setCursor(2,30);
     uint8_t tmpKnob3Rotation = __atomic_load_n(&knob3Rotation, __ATOMIC_RELAXED);
     u8g2.println(tmpKnob3Rotation, DEC);
+
+    u8g2.setCursor(60,30);
+    uint8_t tmpKnob2Rotation = __atomic_load_n(&knob2Rotation, __ATOMIC_RELAXED);
+    u8g2.println(tmpKnob2Rotation, DEC);
+
+    u8g2.drawStr(80,20,globalKeySymbol);
 
     u8g2.sendBuffer(); // transfer internal memory to the display 
 
@@ -206,12 +234,14 @@ void setup() {
   u8g2.begin();
   setOutMuxBit(DEN_BIT, HIGH);  //Enable display power supply
 
-  TIM_TypeDef *Instance = TIM1;
-  HardwareTimer *sampleTimer = new HardwareTimer(Instance);
+  // TIM_TypeDef *Instance2 = TIM1;
+  // HardwareTimer *sampleTimer2 = new HardwareTimer(Instance2);
+
   //Initialise UART
-  sampleTimer->setOverflow(22000, HERTZ_FORMAT);
-  sampleTimer->attachInterrupt(sampleISR);
-  sampleTimer->resume();
+  pitch();
+  // sampleTimer2->setOverflow(22000, HERTZ_FORMAT);
+  // sampleTimer2->attachInterrupt(pitch);
+  // sampleTimer2->resume();
 
   TaskHandle_t scanKeysHandle = NULL;
   xTaskCreate(
