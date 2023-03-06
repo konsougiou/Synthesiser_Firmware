@@ -12,6 +12,7 @@ extern  const double frequency_ratio;
 
 extern volatile uint32_t stepSizes[];  
 extern char* keyOrder[];
+extern volatile uint32_t freqs[];
 
 extern volatile uint32_t currentStepSize;
 

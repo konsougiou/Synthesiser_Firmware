@@ -122,7 +122,7 @@ void scanKeysTask(void * pvParameters) {
     //For changing the pitch
     knob2->setLimits(8, 0);
     knob2->updateRotation(knob2Rotation);
-    uint32_t stepScaling = (pow(2, 32) / (4000*knob2Rotation));
+    uint32_t stepScaling = (pow(2, 32) / freqs[knob2Rotation]);
 
     //extracting the step size
     for(int i = 0; i < 3; i++){

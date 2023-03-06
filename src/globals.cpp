@@ -19,6 +19,8 @@ char* keyOrder [] = {"C","C#","D","D#","E","F","F#","G","G#","A","A#","B"};
 
 volatile uint32_t currentStepSize = 0;
 
+volatile uint32_t freqs [] = {2000, 5000, 10000, 17000, 22000, 28000, 30000, 40000, 50000};
+
 
 
 // THIS IS CONST INSTEAD OF VOLATILE MIGHT CAUSE PROBLEMS???
