@@ -9,7 +9,7 @@ knob::knob(uint8_t number):  knobNumber(number){
     lowerLimit = 0;
     knobState = 0;
 }
-
+ 
 void knob::updateRotation(uint8_t& knobRotation){
   xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
 
