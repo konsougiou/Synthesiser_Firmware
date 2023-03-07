@@ -6,12 +6,6 @@
 
 #include "globals.hpp"
 
-// volatile uint8_t TX_Message[8] = {0};
-uint8_t RX_Message[8] = {0};
-
-QueueHandle_t msgInQ;
-SemaphoreHandle_t CAN_TX_Semaphore;
-
 // Pin definitions
 // Row select and enable
 const int RA0_PIN = D3;
@@ -120,6 +114,22 @@ void CAN_TX_Task(void *pvParameters)
   }
 }
 
+void transmitTask(void *pvParameters)
+{
+  const TickType_t xFrequency = 80 / portTICK_PERIOD_MS;
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+
+  while (1)
+  {
+    vTaskDelayUntil(&xLastWakeTime, xFrequency);
+
+    xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
+
+    // Have two blocking statements because it must obtain a message from
+    // the queue and take the semaphore before sending the message:
+  }
+}
+
 void scanKeysTask(void *pvParameters)
 {
 
@@ -199,7 +209,7 @@ void scanKeysTask(void *pvParameters)
     }
 
     // CAN_TX(0x123, (uint8_t *)TX_Message); // Sending the CAN message with scanned keys.
-    xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
+    xQueueSend(msgOutQ, (const void*)TX_Message, portMAX_DELAY);
 
     __atomic_store_n(&currentStepSize, tmpCurrentStepSize, __ATOMIC_RELAXED);
 
@@ -292,20 +302,6 @@ void decodeTask(void *pvParameters)
   }
 }
 
-void transmitTask(void *pvParameters)
-{
-  const TickType_t xFrequency = 80 / portTICK_PERIOD_MS;
-  TickType_t xLastWakeTime = xTaskGetTickCount();
-
-  while (1)
-  {
-    vTaskDelayUntil(&xLastWakeTime, xFrequency);
-
-    // Have two blocking statements because it must obtain a message from
-    // the queue and take the semaphore before sending the message:
-  }
-}
-
 void setup()
 {
   // put your setup code here, to run once:
@@ -364,7 +360,7 @@ void setup()
   TaskHandle_t decodeTaskHandle = NULL;
   xTaskCreate(
       decodeTask,      /* Function that implements the task */
-      "updateDisplay", /* Text name for the task */
+      "decodeMessage", /* Text name for the task */
       256,             /* Stack size in words, not bytes */
       NULL,            /* Parameter passed into the task */
       1,               /* Task priority */
@@ -373,7 +369,7 @@ void setup()
   TaskHandle_t transmitTaskHandle = NULL;
   xTaskCreate(
       transmitTask,    /* Function that implements the task */
-      "updateDisplay", /* Text name for the task */
+      "transmitMessage", /* Text name for the task */
       256,             /* Stack size in words, not bytes */
       NULL,            /* Parameter passed into the task */
       1,               /* Task priority */
