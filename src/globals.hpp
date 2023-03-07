@@ -16,9 +16,13 @@ extern volatile uint32_t freqs[];
 
 extern volatile uint32_t currentStepSize;
 
+extern volatile uint32_t activeKeys[];
+extern volatile uint32_t currentStepSizes[12];
+
 extern volatile uint8_t keyArray[7];
 
 extern SemaphoreHandle_t keyArrayMutex;
+extern SemaphoreHandle_t currentStepSizesMutex;
 
 extern const char* globalKeySymbol;
 

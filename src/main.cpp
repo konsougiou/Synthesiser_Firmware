@@ -49,15 +49,22 @@ void setOutMuxBit(const uint8_t bitIdx, const bool value) {
 }
 
 void sampleISR() {
-  static uint32_t phaseAcc = 0;
-
-  phaseAcc += currentStepSize;
-  int32_t Vout = (phaseAcc >> 24) - 128;
-  Vout = Vout >> (8 - knob3Rotation);
-  if (knob3Rotation == 0){
-    Vout = 0;
+  static uint32_t phaseAccArray[12] = {0};
+  int32_t totalVout = 0;
+  int32_t Vout;
+  for(int z=0;z<12;z++){
+    phaseAccArray[z] += currentStepSizes[z];
+    Vout = (phaseAccArray[z] >> 24);
+    //Vout = Vout >> (8 - knob3Rotation);
+    totalVout += Vout;
   }
-  analogWrite(OUTR_PIN, Vout + 128);
+  totalVout = totalVout >> (8 - knob3Rotation);
+  totalVout -= 128;
+
+  if (knob3Rotation == 0){
+    totalVout = 0;
+  }
+  analogWrite(OUTR_PIN, totalVout + 128);
 }
 
 void pitch(){
@@ -95,7 +102,7 @@ void setRow(uint8_t rowIdx){
 
 void scanKeysTask(void * pvParameters) {
 
-  const TickType_t xFrequency = 30/portTICK_PERIOD_MS;
+  const TickType_t xFrequency = 20/portTICK_PERIOD_MS;
   TickType_t xLastWakeTime = xTaskGetTickCount();
   uint8_t localKeyArray[7];
   char* keysymbol = 0;
@@ -112,9 +119,7 @@ void scanKeysTask(void * pvParameters) {
    }
 
     xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
-
     std::copy(std::begin(localKeyArray), std::end(localKeyArray), std::begin(keyArray));
-
     xSemaphoreGive(keyArrayMutex);
  
     uint32_t tmpCurrentStepSize = 0;
@@ -124,38 +129,65 @@ void scanKeysTask(void * pvParameters) {
     knob2->updateRotation(knob2Rotation);
     uint32_t stepScaling = (pow(2, 32) / freqs[knob2Rotation]);
 
+    
+    uint32_t localCurrentStepSizes[12] = {0};
     //extracting the step size
     for(int i = 0; i < 3; i++){
+
+      // xSemaphoreTake(currentStepSizesMutex, portMAX_DELAY);
+      // for(int u=0;u<12;u++){
+      //   localCurrentStepSizes[u] = currentStepSizes[u];
+      // }
+      // xSemaphoreGive(currentStepSizesMutex);
       
       xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
-     
       uint8_t keyGroup = keyArray[i];
-
       xSemaphoreGive(keyArrayMutex);
+
       uint8_t key4 = (keyGroup % 16) >> 3; 
       uint8_t key3 = (keyGroup % 8) >> 2;
       uint8_t key2 = (keyGroup % 4) >> 1;
       uint8_t key1 = (keyGroup % 2);
       uint8_t keyOffset = i * 4;
       if (!key1){
-        tmpCurrentStepSize = stepSizes[keyOffset]*stepScaling;
+        localCurrentStepSizes[keyOffset] = stepSizes[keyOffset]*stepScaling;
         keysymbol = keyOrder[keyOffset];
       }
+      else{
+        localCurrentStepSizes[keyOffset] = 0;
+      }
       if (!key2){
-        tmpCurrentStepSize = stepSizes[keyOffset + 1]*stepScaling;
+        localCurrentStepSizes[keyOffset + 1] = stepSizes[keyOffset + 1]*stepScaling;
         keysymbol = keyOrder[keyOffset+1];
       }
+      else{
+        localCurrentStepSizes[keyOffset + 1] = 0;
+      }
       if (!key3){
-        tmpCurrentStepSize = stepSizes[keyOffset + 2]*stepScaling;
+        localCurrentStepSizes[keyOffset + 2] = stepSizes[keyOffset + 2]*stepScaling;
         keysymbol = keyOrder[keyOffset+2];
-      }    
+      }
+      else{
+        localCurrentStepSizes[keyOffset + 2] = 0;
+      }
       if (!key4){
-        tmpCurrentStepSize = stepSizes[keyOffset + 3]*stepScaling;
+        localCurrentStepSizes[keyOffset + 3] = stepSizes[keyOffset + 3]*stepScaling;
         keysymbol = keyOrder[keyOffset+3];
+      }
+      else{
+        localCurrentStepSizes[keyOffset + 3] = 0;
+      }
+      if(!key4 && !key3){
+        uint8_t freq3 = sin(2.0 * PI * stepSizes[keyOffset + 2]*stepScaling);
+        uint8_t freq4 = sin(2.0 * PI * stepSizes[keyOffset + 3]*stepScaling);
+        keysymbol = "key3&4";
       }
     };
 
-  __atomic_store_n(&currentStepSize, tmpCurrentStepSize, __ATOMIC_RELAXED);
+  xSemaphoreTake(currentStepSizesMutex, portMAX_DELAY);
+  std::copy(std::begin(localCurrentStepSizes), std::end(localCurrentStepSizes), std::begin(currentStepSizes));
+  xSemaphoreGive(currentStepSizesMutex);
+  // __atomic_store_n(&currentStepSize, tmpCurrentStepSize, __ATOMIC_RELAXED);
   __atomic_store_n(&globalKeySymbol, keysymbol, __ATOMIC_RELAXED);
 
   knob3->setLimits(8, 0);
@@ -256,13 +288,14 @@ void setup() {
   xTaskCreate(
   displayUpdateTask,		/* Function that implements the task */
   "updateDisplay",		/* Text name for the task */
-  256,      		/* Stack size in words, not bytes */
-  NULL,			/* Parameter passed into the task */
-  1,			/* Task priority */
+  256,      		    /* Stack size in words, not bytes */
+  NULL,			      /* Parameter passed into the task */
+  1,			      /* Task priority */
   &scanKeysHandle);
 
   //Create the mutex and assign its handle in the setup function
   keyArrayMutex = xSemaphoreCreateMutex();
+  currentStepSizesMutex = xSemaphoreCreateMutex();
 
   vTaskStartScheduler();
   }

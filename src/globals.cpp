@@ -21,7 +21,8 @@ volatile uint32_t currentStepSize = 0;
 
 volatile uint32_t freqs [] = {2000, 5000, 10000, 17000, 22000, 28000, 30000, 40000, 50000};
 
-
+volatile uint32_t activeKeys[] = {0};
+volatile uint32_t currentStepSizes[12] = {0};
 
 // THIS IS CONST INSTEAD OF VOLATILE MIGHT CAUSE PROBLEMS???
 const char* globalKeySymbol = 0;
@@ -32,6 +33,7 @@ const char* globalKeySymbol = 0;
 volatile uint8_t keyArray[7];
 
 SemaphoreHandle_t keyArrayMutex;
+SemaphoreHandle_t currentStepSizesMutex;
 
 uint8_t knob3Rotation = 0;
 uint8_t knob2Rotation = 0;
