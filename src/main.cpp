@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <U8g2lib.h>
 #include <math.h>
+#include <algorithm>
 #include <STM32FreeRTOS.h>
 
 #include "globals.hpp"
@@ -53,18 +54,28 @@ void sampleISR() {
   int32_t totalVout = 0;
   int32_t Vout;
   for(int z=0;z<12;z++){
-    phaseAccArray[z] += currentStepSizes[z];
-    Vout = (phaseAccArray[z] >> 24);
+    if(currentStepSizes[z]==0){
+      phaseAccArray[z]=0;
+      Vout = 0;
+    }
+    else{
+      phaseAccArray[z] += currentStepSizes[z];
+      Vout = (phaseAccArray[z] >> 24) - 128;
+    }
+    //Vout = (phaseAccArray[z] >> 24) - 128;
     //Vout = Vout >> (8 - knob3Rotation);
+    // Vout = min(128, (int) Vout);
+    // Vout = max(-128, (int) Vout);
     totalVout += Vout;
   }
   totalVout = totalVout >> (8 - knob3Rotation);
-  totalVout -= 128;
+  totalVout = min(255, (int) totalVout+128);
+  totalVout = max(0, (int) totalVout);
 
   if (knob3Rotation == 0){
     totalVout = 0;
   }
-  analogWrite(OUTR_PIN, totalVout + 128);
+  analogWrite(OUTR_PIN, totalVout);
 }
 
 void pitch(){
