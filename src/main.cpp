@@ -186,7 +186,15 @@ void scanKeysTask(void *pvParameters)
     // CAN_TX(0x123, (uint8_t *)TX_Message); // Sending the CAN message with scanned keys.
     // xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
 
-    __atomic_store_n(&currentStepSize, tmpCurrentStepSize, __ATOMIC_RELAXED);
+    if (pressOrReceive == false)
+    {
+      __atomic_store_n(&currentStepSize, tmpCurrentStepSize, __ATOMIC_RELAXED);
+    }
+    else
+    {
+      // Their code comes in
+      continue;
+    }
 
     knob3->setLimits(8, 0);
 
@@ -248,7 +256,7 @@ void decodeTask(void *pvParameters)
   const TickType_t xFrequency = 80 / portTICK_PERIOD_MS;
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  bool pressOrReceive = false; // False == Receive, True == Press
+  // bool pressOrReceive = false; // False == Receive, True == Press
   uint8_t tempRX_Message[8] = {0};
 
   while (1)
@@ -272,7 +280,7 @@ void decodeTask(void *pvParameters)
     {
       pressOrReceive = false;
       // Line below is essentially this: currentStepSize = 0;
-      __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
+      // __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
     }
   }
 }

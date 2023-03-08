@@ -19,6 +19,8 @@ extern SemaphoreHandle_t queueReceiveMutex;
 
 // extern SemaphoreHandle_t CAN_TX_Semaphore;
 
+extern bool pressOrReceive; // False == Receive, True == Press
+
 extern QueueHandle_t msgInQ;
 extern QueueHandle_t msgOutQ;
 
