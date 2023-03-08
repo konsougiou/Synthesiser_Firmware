@@ -102,6 +102,38 @@ void CAN_RX_ISR(void)
 // {
 //   xSemaphoreGiveFromISR(CAN_TX_Semaphore, NULL);
 // }
+void handshakeTask(void *pvParameters)
+{
+
+  const TickType_t xFrequency = 30 / portTICK_PERIOD_MS;
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+  while (1)
+  {
+
+    vTaskDelayUntil(&xLastWakeTime, xFrequency);
+
+    setRow(5);                // Set row address
+    digitalWrite(OUT_PIN, 1); // Set value to latch in DFF
+    digitalWrite(REN_PIN, 1); // Enable selected row
+    delayMicroseconds(3);     // Wait for column inputs to stabilise
+    xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
+    keyArray[5] = readCols(); // Read column inputs
+    xSemaphoreGive(keyArrayMutex);
+    digitalWrite(REN_PIN, 0);
+
+    delayMicroseconds(3);
+
+    setRow(6);                // Set row address
+    digitalWrite(OUT_PIN, 1); // Set value to latch in DFF
+    digitalWrite(REN_PIN, 1); // Enable selected row
+    delayMicroseconds(3);
+    // Wait for column inputs to stabilise
+    xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
+    keyArray[6] = readCols(); // Read column inputs
+    xSemaphoreGive(keyArrayMutex);
+    digitalWrite(REN_PIN, 0);
+  }
+}
 
 void scanKeysTask(void *pvParameters)
 {
@@ -129,7 +161,7 @@ void scanKeysTask(void *pvParameters)
 
     xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
 
-    std::copy(std::begin(localKeyArray), std::end(localKeyArray), std::begin(keyArray));
+    std::copy(std::begin(localKeyArray), std::begin(localKeyArray) + 4, std::begin(keyArray));
 
     xSemaphoreGive(keyArrayMutex);
 
@@ -219,6 +251,8 @@ void displayUpdateTask(void *pvParameters)
     uint32_t byte1 = ((uint32_t)keyArray[0]) << 8;
     uint32_t byte2 = ((uint32_t)keyArray[1]) << 4;
     uint32_t byte3 = (uint32_t)keyArray[2];
+    uint8_t westDetect = ((uint32_t)keyArray[5]); // % 16) >> 3;
+    uint8_t eastDetect = ((uint32_t)keyArray[6]); // % 16) >> 3;
 
     xSemaphoreGive(keyArrayMutex);
 
@@ -240,10 +274,34 @@ void displayUpdateTask(void *pvParameters)
     while (CAN_CheckRXLevel())
       CAN_RX(ID, RX_Message);
 
+    u8g2.setCursor(46, 30);
+    // u8g2.print((char)RX_Message[0]);
+    // u8g2.print(RX_Message[1]);
+    // u8g2.print(RX_Message[2]);
+    // u8g2.print(HAL_GetUIDw0());
+    u8g2.print(westDetect, HEX);
     u8g2.setCursor(66, 30);
-    u8g2.print((char)RX_Message[0]);
-    u8g2.print(RX_Message[1]);
-    u8g2.print(RX_Message[2]);
+    u8g2.print(eastDetect, HEX);
+    // u8g2.print(HAL_GetUIDw2());
+
+    u8g2.setCursor(40, 20);
+    if ((westDetect == 0x7) && (eastDetect == 0x7))
+    {
+      u8g2.drawStr(40, 20, "Centre");
+    }
+    else if ((westDetect == 0x7) && (eastDetect == 0xF))
+    {
+      u8g2.drawStr(40, 20, "Right");
+    }
+    else if ((westDetect == 0xF) && (eastDetect == 0x7))
+    {
+      u8g2.drawStr(40, 20, "Left");
+    }
+    else
+    {
+      u8g2.drawStr(40, 20, "-_-");
+    }
+    // TODO: octave thing in the morning
 
     u8g2.sendBuffer(); // transfer internal memory to the display
 
@@ -368,6 +426,15 @@ void setup()
   //     NULL,             /* Parameter passed into the task */
   //     1,                /* Task priority */
   //     &CAN_TX_TaskHandle);
+
+  TaskHandle_t handshakeTaskHandle = NULL;
+  xTaskCreate(
+      handshakeTask,   /* Function that implements the task */
+      "decodeMessage", /* Text name for the task */
+      256,             /* Stack size in words, not bytes */
+      NULL,            /* Parameter passed into the task */
+      1,               /* Task priority */
+      &decodeTaskHandle);
 
   // Create the mutex and assign its handle in the setup function
   keyArrayMutex = xSemaphoreCreateMutex();
