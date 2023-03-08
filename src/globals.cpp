@@ -21,7 +21,7 @@ volatile uint8_t keyArray[7];
 QueueHandle_t msgInQ;
 QueueHandle_t msgOutQ;
 
-// uint8_t RX_Message[8] = {0};
+uint8_t RX_Message[8] = {0};
 uint8_t TX_Message[8] = {0};
 
 SemaphoreHandle_t keyArrayMutex;
