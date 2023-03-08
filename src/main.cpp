@@ -98,37 +98,10 @@ void CAN_RX_ISR(void)
   xQueueSendFromISR(msgInQ, RX_Message_ISR, NULL);
 }
 
-void CAN_TX_ISR(void)
-{
-  xSemaphoreGiveFromISR(CAN_TX_Semaphore, NULL);
-}
-
-void CAN_TX_Task(void *pvParameters)
-{
-  uint8_t msgOut[8];
-  while (1)
-  {
-    xQueueReceive(msgOutQ, msgOut, portMAX_DELAY);
-    xSemaphoreTake(CAN_TX_Semaphore, portMAX_DELAY);
-    CAN_TX(0x123, msgOut);
-  }
-}
-
-void transmitTask(void *pvParameters)
-{
-  const TickType_t xFrequency = 80 / portTICK_PERIOD_MS;
-  TickType_t xLastWakeTime = xTaskGetTickCount();
-
-  while (1)
-  {
-    vTaskDelayUntil(&xLastWakeTime, xFrequency);
-
-    xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
-
-    // Have two blocking statements because it must obtain a message from
-    // the queue and take the semaphore before sending the message:
-  }
-}
+// void CAN_TX_ISR(void)
+// {
+//   xSemaphoreGiveFromISR(CAN_TX_Semaphore, NULL);
+// }
 
 void scanKeysTask(void *pvParameters)
 {
@@ -136,6 +109,8 @@ void scanKeysTask(void *pvParameters)
   const TickType_t xFrequency = 30 / portTICK_PERIOD_MS;
   TickType_t xLastWakeTime = xTaskGetTickCount();
   uint8_t localKeyArray[7];
+
+  uint8_t TX_Message[8] = {0};
 
   // volatile uint8_t TX_Message[8] = {0};
 
@@ -209,7 +184,7 @@ void scanKeysTask(void *pvParameters)
     }
 
     // CAN_TX(0x123, (uint8_t *)TX_Message); // Sending the CAN message with scanned keys.
-    xQueueSend(msgOutQ, (const void*)TX_Message, portMAX_DELAY);
+    // xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
 
     __atomic_store_n(&currentStepSize, tmpCurrentStepSize, __ATOMIC_RELAXED);
 
@@ -302,6 +277,17 @@ void decodeTask(void *pvParameters)
   }
 }
 
+// void CAN_TX_Task(void *pvParameters)
+// {
+//   uint8_t msgOut[8];
+//   while (1)
+//   {
+//     xQueueReceive(msgOutQ, msgOut, portMAX_DELAY);
+//     xSemaphoreTake(CAN_TX_Semaphore, portMAX_DELAY);
+//     CAN_TX(0x123, msgOut);
+//   }
+// }
+
 void setup()
 {
   // put your setup code here, to run once:
@@ -366,25 +352,25 @@ void setup()
       1,               /* Task priority */
       &decodeTaskHandle);
 
-  TaskHandle_t transmitTaskHandle = NULL;
-  xTaskCreate(
-      transmitTask,    /* Function that implements the task */
-      "transmitMessage", /* Text name for the task */
-      256,             /* Stack size in words, not bytes */
-      NULL,            /* Parameter passed into the task */
-      1,               /* Task priority */
-      &transmitTaskHandle);
+  // TaskHandle_t CAN_TX_TaskHandle = NULL;
+  // xTaskCreate(
+  //     CAN_TX_Task,      /* Function that implements the task */
+  //     "CAN_TX_Message", /* Text name for the task */
+  //     256,              /* Stack size in words, not bytes */
+  //     NULL,             /* Parameter passed into the task */
+  //     1,                /* Task priority */
+  //     &CAN_TX_TaskHandle);
 
   // Create the mutex and assign its handle in the setup function
   keyArrayMutex = xSemaphoreCreateMutex();
   queueReceiveMutex = xSemaphoreCreateMutex();
 
-  CAN_TX_Semaphore = xSemaphoreCreateCounting(3, 3);
+  // CAN_TX_Semaphore = xSemaphoreCreateCounting(3, 3);
 
   CAN_Init(false);
   setCANFilter(0x123, 0x7ff);
   CAN_RegisterRX_ISR(CAN_RX_ISR);
-  CAN_RegisterTX_ISR(CAN_TX_ISR);
+  // CAN_RegisterTX_ISR(CAN_TX_ISR);
   CAN_Start();
 
   vTaskStartScheduler();
