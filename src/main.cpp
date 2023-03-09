@@ -100,9 +100,9 @@ void CAN_RX_ISR(void)
 }
 
 void CAN_TX_ISR(void)
- {
-   xSemaphoreGiveFromISR(CAN_TX_Semaphore, NULL);
- }
+{
+  xSemaphoreGiveFromISR(CAN_TX_Semaphore, NULL);
+}
 void handshakeTask(void *pvParameters)
 {
 
@@ -141,17 +141,31 @@ void scanKeysTask(void *pvParameters)
 
   const TickType_t xFrequency = 30 / portTICK_PERIOD_MS;
   TickType_t xLastWakeTime = xTaskGetTickCount();
-  uint8_t localKeyArray[7];
+  uint8_t localKeyArray[5];
 
-  //uint8_t TX_Message[8] = {0};
+  // uint8_t TX_Message[8] = {0};
   uint32_t ID;
   bool keyPressedPrev = false;
+
+  // uint8_t localOctave = 4;
+  uint8_t tempLocalOctave = 5;
+
+  // step Sizes for 4th octave
+  // const uint32_t localstepSizes[] = {51069198, 54102708, 57316409, 60721004, 64327831, 68148905,
+  //                                    72196950, 76485448, 81028684, 85841788, 90940790, 96342673};
 
   // volatile uint8_t TX_Message[8] = {0};
 
   while (1)
   {
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
+
+    xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
+
+    uint8_t westDetect = ((uint32_t)keyArray[5]); // % 16) >> 3;
+    uint8_t eastDetect = ((uint32_t)keyArray[6]); // % 16) >> 3;
+
+    xSemaphoreGive(keyArrayMutex);
 
     for (uint8_t rowIdx = 0; rowIdx < 5; rowIdx++)
     {
@@ -164,7 +178,7 @@ void scanKeysTask(void *pvParameters)
 
     xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
 
-    std::copy(std::begin(localKeyArray), std::begin(localKeyArray) + 4, std::begin(keyArray));
+    std::copy(std::begin(localKeyArray), std::end(localKeyArray), std::begin(keyArray));
 
     xSemaphoreGive(keyArrayMutex);
 
@@ -173,7 +187,6 @@ void scanKeysTask(void *pvParameters)
 
     TX_Message[0] = 82;
     bool key_pressed = false;
-
 
     for (int i = 0; i < 3; i++)
     {
@@ -214,13 +227,40 @@ void scanKeysTask(void *pvParameters)
         TX_Message[2] = keyOffset + 3;
       }
     };
-    TX_Message[1] = 4;
+    // TX_Message[1] = 4;
+
+    // Need to set the local octave as well.
+    // This would mean that the local step size would also have to be altered accordingly.
+    // preferably on-the-fly
+    if ((westDetect == 0x7) && (eastDetect == 0x7)) // Centre
+    {
+      TX_Message[1] = 5;
+      tempLocalOctave = 5;
+    }
+    else if ((westDetect == 0x7) && (eastDetect == 0xF)) // Right
+    {
+      TX_Message[1] = 6;
+      tempLocalOctave = 6;
+    }
+    else if ((westDetect == 0xF) && (eastDetect == 0x7)) // Left
+    {
+      TX_Message[1] = 4;
+      tempLocalOctave = 4;
+    }
+    else // Centre
+    {
+      TX_Message[1] = 9;
+      tempLocalOctave = 9;
+    }
+    __atomic_store_n(&localOctave, tempLocalOctave, __ATOMIC_RELAXED);
+
     if (key_pressed)
     {
       TX_Message[0] = 80;
       xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
     }
-    else if(key_pressed != keyPressedPrev){
+    else if (key_pressed != keyPressedPrev)
+    {
       xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
     }
 
@@ -285,31 +325,36 @@ void displayUpdateTask(void *pvParameters)
 
     u8g2.setCursor(46, 30);
     // u8g2.print((char)RX_Message[0]);
-    u8g2.print(RX_Message[1]);
-    u8g2.print(RX_Message[2]);
-    //u8g2.print(HAL_GetUIDw0());
-    //u8g2.print(westDetect, HEX);
+    u8g2.print(TX_Message[1]);
+    // u8g2.print(RX_Message[2]);
+    // u8g2.print(HAL_GetUIDw0());
+
     u8g2.setCursor(66, 30);
     u8g2.print(eastDetect, HEX);
+    u8g2.print(westDetect, HEX);
     // u8g2.print(HAL_GetUIDw2());
 
     u8g2.setCursor(40, 20);
     if ((westDetect == 0x7) && (eastDetect == 0x7))
     {
-      u8g2.drawStr(40, 20, "Centre");
+      u8g2.drawStr(60, 20, "Centre");
     }
     else if ((westDetect == 0x7) && (eastDetect == 0xF))
     {
-      u8g2.drawStr(40, 20, "Right");
+      u8g2.drawStr(60, 20, "Right");
     }
     else if ((westDetect == 0xF) && (eastDetect == 0x7))
     {
-      u8g2.drawStr(40, 20, "Left");
+      u8g2.drawStr(60, 20, "Left");
     }
     else
     {
-      u8g2.drawStr(40, 20, "-_-");
+      u8g2.drawStr(60, 20, "-_-");
     }
+
+    u8g2.setCursor(86, 30);
+    uint32_t tmpLocalOctave = __atomic_load_n(&localOctave, __ATOMIC_RELAXED);
+    u8g2.print(tmpLocalOctave, HEX);
     // TODO: octave thing in the morning
 
     u8g2.sendBuffer(); // transfer internal memory to the display
@@ -352,7 +397,8 @@ void decodeTask(void *pvParameters)
   }
 }
 
-void CAN_TX_Task(void *pvParameters) {
+void CAN_TX_Task(void *pvParameters)
+{
   uint8_t msgOut[8];
   while (1)
   {

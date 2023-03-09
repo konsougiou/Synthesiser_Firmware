@@ -10,6 +10,8 @@ extern const uint32_t step_scaling;
 
 extern const uint32_t stepSizes[];
 
+extern volatile uint8_t localOctave;
+
 extern volatile uint32_t currentStepSize;
 
 extern volatile uint8_t keyArray[7];
