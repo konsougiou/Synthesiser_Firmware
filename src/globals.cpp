@@ -12,6 +12,8 @@ const uint32_t step_scaling = pow(2, 32) / 22000;
 const uint32_t stepSizes[] = {51069198, 54102708, 57316409, 60721004, 64327831, 68148905,
                               72196950, 76485448, 81028684, 85841788, 90940790, 96342673};
 
+volatile uint8_t localOctave = 4;
+
 volatile uint32_t currentStepSize = 0;
 
 volatile uint8_t keyArray[7];
