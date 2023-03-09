@@ -55,18 +55,23 @@ void sampleISR() {
   int32_t Vout;
   for(int z=0;z<12;z++){
     if(currentStepSizes[z]==0){
-      phaseAccArray[z]=0;
-      Vout = 0;
+      // phaseAccArray[z]=0;
+      // Vout = 0;
+      // outVs[z] = outVs[z];
+      // totalVout += outVs[z];
     }
     else{
       phaseAccArray[z] += currentStepSizes[z];
-      Vout = (phaseAccArray[z] >> 24) - 128;
+      lastStepSizes[z] = phaseAccArray[z];
+      Vout = ((phaseAccArray[z] >> 24) - 128);
+      outVs[z] = Vout;
+      totalVout += outVs[z];
     }
-    //Vout = (phaseAccArray[z] >> 24) - 128;
-    //Vout = Vout >> (8 - knob3Rotation);
-    // Vout = min(128, (int) Vout);
-    // Vout = max(-128, (int) Vout);
-    totalVout += Vout;
+    // totalVout += Vout;
+    // lastStepSizes[z] = currentStepSizes[z]; 
+    
+  }
+  for(int x=0;x<12;x++){
   }
   totalVout = totalVout >> (8 - knob3Rotation);
   totalVout = min(255, (int) totalVout+128);
@@ -116,6 +121,8 @@ void scanKeysTask(void * pvParameters) {
   const TickType_t xFrequency = 20/portTICK_PERIOD_MS;
   TickType_t xLastWakeTime = xTaskGetTickCount();
   uint8_t localKeyArray[7];
+  uint32_t localCurrentStepSizes[12] = {0};
+  // uint32_t localCurrentStepSizes[12] = {0};
   char* keysymbol = 0;
 
   while (1) {
@@ -134,14 +141,18 @@ void scanKeysTask(void * pvParameters) {
     xSemaphoreGive(keyArrayMutex);
  
     uint32_t tmpCurrentStepSize = 0;
-
+    for(int y=0;y<12;y++){
+      localCurrentStepSizes[y] = 0;
+    }
+    
     //For changing the pitch
     knob2->setLimits(8, 0);
     knob2->updateRotation(knob2Rotation);
     uint32_t stepScaling = (pow(2, 32) / freqs[knob2Rotation]);
-
     
-    uint32_t localCurrentStepSizes[12] = {0};
+    // for(int v=0;v<12;v++){
+    //   localCurrentStepSizes[v] = localCurrentStepSizes[v]*0.99;
+    // }
     //extracting the step size
     for(int i = 0; i < 3; i++){
 
@@ -164,35 +175,30 @@ void scanKeysTask(void * pvParameters) {
         localCurrentStepSizes[keyOffset] = stepSizes[keyOffset]*stepScaling;
         keysymbol = keyOrder[keyOffset];
       }
-      else{
-        localCurrentStepSizes[keyOffset] = 0;
-      }
+      // else{
+      //   localCurrentStepSizes[keyOffset] = 0;
+      // }
       if (!key2){
         localCurrentStepSizes[keyOffset + 1] = stepSizes[keyOffset + 1]*stepScaling;
         keysymbol = keyOrder[keyOffset+1];
       }
-      else{
-        localCurrentStepSizes[keyOffset + 1] = 0;
-      }
+      // else{
+      //   localCurrentStepSizes[keyOffset + 1] = 0;
+      // }
       if (!key3){
         localCurrentStepSizes[keyOffset + 2] = stepSizes[keyOffset + 2]*stepScaling;
         keysymbol = keyOrder[keyOffset+2];
       }
-      else{
-        localCurrentStepSizes[keyOffset + 2] = 0;
-      }
+      // else{
+      //   localCurrentStepSizes[keyOffset + 2] = 0;
+      // }
       if (!key4){
         localCurrentStepSizes[keyOffset + 3] = stepSizes[keyOffset + 3]*stepScaling;
         keysymbol = keyOrder[keyOffset+3];
       }
-      else{
-        localCurrentStepSizes[keyOffset + 3] = 0;
-      }
-      if(!key4 && !key3){
-        uint8_t freq3 = sin(2.0 * PI * stepSizes[keyOffset + 2]*stepScaling);
-        uint8_t freq4 = sin(2.0 * PI * stepSizes[keyOffset + 3]*stepScaling);
-        keysymbol = "key3&4";
-      }
+      // else{
+      //   localCurrentStepSizes[keyOffset + 3] = 0;
+      // }
     };
 
   xSemaphoreTake(currentStepSizesMutex, portMAX_DELAY);
@@ -224,27 +230,34 @@ void displayUpdateTask(void * pvParameters) {
     xSemaphoreGive(keyArrayMutex);   
 
     u8g2.clearBuffer();         // clear the internal memory
-    u8g2.setFont(u8g2_font_ncenB08_tr); // choose a suitable font      
+    u8g2.setFont(u8g2_font_ncenB08_tr); // choose a suitable font  
 
   //u8g2.print(currentStepSize);
 
     u8g2.setCursor(2,10);
     u8g2.println(byte1 + byte2 + byte3, HEX);
-    u8g2.setCursor(2,20);
 
-    uint32_t tmpStepSize = __atomic_load_n(&currentStepSize, __ATOMIC_RELAXED);
-    u8g2.println(tmpStepSize);
-    u8g2.setCursor(2,30);
+    u8g2.setFont(u8g2_font_helvR08_tr);
+    u8g2.drawButtonUTF8(42, 20, U8G2_BTN_INV, 0,  2,  2, "Sensory Overload" );
+    // uint32_t tmpStepSize = __atomic_load_n(&currentStepSize, __ATOMIC_RELAXED);
+    // u8g2.println(tmpStepSize);
+    u8g2.setCursor(11,30);
     uint8_t tmpKnob3Rotation = __atomic_load_n(&knob3Rotation, __ATOMIC_RELAXED);
     u8g2.println(tmpKnob3Rotation, DEC);
 
-    u8g2.setCursor(60,30);
+    u8g2.setCursor(2,30);
     uint8_t tmpKnob2Rotation = __atomic_load_n(&knob2Rotation, __ATOMIC_RELAXED);
     u8g2.println(tmpKnob2Rotation, DEC);
 
-    u8g2.drawStr(80,20,globalKeySymbol);
+    u8g2.drawStr(20,30,globalKeySymbol);
+
+    u8g2.setFont(u8g2_font_unifont_t_symbols);
+    u8g2.drawGlyph(25, 20, 0x2615);
+    u8g2.setFontDirection(0);
 
     u8g2.sendBuffer(); // transfer internal memory to the display 
+
+    
 
     digitalToggle(LED_BUILTIN);   //Toggle LED
   }

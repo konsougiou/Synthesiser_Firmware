@@ -23,6 +23,9 @@ volatile uint32_t freqs [] = {2000, 5000, 10000, 17000, 22000, 28000, 30000, 400
 
 volatile uint32_t activeKeys[] = {0};
 volatile uint32_t currentStepSizes[12] = {0};
+volatile uint32_t outVs[12] = {0};
+volatile uint32_t lastStepSizes[12] = {0};
+// volatile int32_t totalVout;
 
 // THIS IS CONST INSTEAD OF VOLATILE MIGHT CAUSE PROBLEMS???
 const char* globalKeySymbol = 0;

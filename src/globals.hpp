@@ -20,6 +20,10 @@ extern volatile uint32_t activeKeys[];
 extern volatile uint32_t currentStepSizes[12];
 
 extern volatile uint8_t keyArray[7];
+extern volatile uint32_t outVs[12];
+extern volatile uint32_t lastStepSizes[12];
+extern int angle;
+// extern volatile int32_t totalVout;
 
 extern SemaphoreHandle_t keyArrayMutex;
 extern SemaphoreHandle_t currentStepSizesMutex;
