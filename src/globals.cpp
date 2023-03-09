@@ -22,12 +22,12 @@ QueueHandle_t msgInQ;
 QueueHandle_t msgOutQ;
 
 uint8_t RX_Message[8] = {0};
-// uint8_t TX_Message[8] = {0};
+uint8_t TX_Message[8] = {0};
 
 SemaphoreHandle_t keyArrayMutex;
 SemaphoreHandle_t queueReceiveMutex;
 
-// SemaphoreHandle_t CAN_TX_Semaphore;
+SemaphoreHandle_t CAN_TX_Semaphore;
 
 bool pressOrReceive = false; // False == Receive, True == Press
 

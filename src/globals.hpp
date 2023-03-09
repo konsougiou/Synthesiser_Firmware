@@ -17,7 +17,7 @@ extern volatile uint8_t keyArray[7];
 extern SemaphoreHandle_t keyArrayMutex;
 extern SemaphoreHandle_t queueReceiveMutex;
 
-// extern SemaphoreHandle_t CAN_TX_Semaphore;
+extern SemaphoreHandle_t CAN_TX_Semaphore;
 
 extern bool pressOrReceive; // False == Receive, True == Press
 
@@ -25,7 +25,7 @@ extern QueueHandle_t msgInQ;
 extern QueueHandle_t msgOutQ;
 
 extern uint8_t RX_Message[8];
-// extern uint8_t TX_Message[8];
+extern uint8_t TX_Message[8];
 
 extern uint8_t knob3Rotation;
 extern uint8_t knob3State;

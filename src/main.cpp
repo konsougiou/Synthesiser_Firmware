@@ -61,6 +61,7 @@ void sampleISR()
   {
     Vout = 0;
   }
+
   analogWrite(OUTR_PIN, Vout + 128);
 }
 
@@ -98,10 +99,10 @@ void CAN_RX_ISR(void)
   xQueueSendFromISR(msgInQ, RX_Message_ISR, NULL);
 }
 
-// void CAN_TX_ISR(void)
-// {
-//   xSemaphoreGiveFromISR(CAN_TX_Semaphore, NULL);
-// }
+void CAN_TX_ISR(void)
+ {
+   xSemaphoreGiveFromISR(CAN_TX_Semaphore, NULL);
+ }
 void handshakeTask(void *pvParameters)
 {
 
@@ -142,7 +143,9 @@ void scanKeysTask(void *pvParameters)
   TickType_t xLastWakeTime = xTaskGetTickCount();
   uint8_t localKeyArray[7];
 
-  uint8_t TX_Message[8] = {0};
+  //uint8_t TX_Message[8] = {0};
+  uint32_t ID;
+  bool keyPressedPrev = false;
 
   // volatile uint8_t TX_Message[8] = {0};
 
@@ -171,6 +174,7 @@ void scanKeysTask(void *pvParameters)
     TX_Message[0] = 82;
     bool key_pressed = false;
 
+
     for (int i = 0; i < 3; i++)
     {
 
@@ -184,6 +188,7 @@ void scanKeysTask(void *pvParameters)
       uint8_t key2 = (keyGroup % 4) >> 1;
       uint8_t key1 = (keyGroup % 2);
       uint8_t keyOffset = i * 4;
+
       if (!key1)
       {
         tmpCurrentStepSize = stepSizes[keyOffset];
@@ -213,10 +218,13 @@ void scanKeysTask(void *pvParameters)
     if (key_pressed)
     {
       TX_Message[0] = 80;
+      xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
+    }
+    else if(key_pressed != keyPressedPrev){
+      xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
     }
 
     // CAN_TX(0x123, (uint8_t *)TX_Message); // Sending the CAN message with scanned keys.
-    // xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
 
     if (pressOrReceive == false)
     {
@@ -228,6 +236,7 @@ void scanKeysTask(void *pvParameters)
       continue;
     }
 
+    keyPressedPrev = key_pressed;
     knob3->setLimits(8, 0);
 
     knob3->updateRotation(knob3Rotation);
@@ -240,7 +249,7 @@ void displayUpdateTask(void *pvParameters)
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
   uint32_t ID;
-  // uint8_t RX_Message[8] = {0};
+  uint8_t RX_Message[8] = {0};
 
   while (1)
   {
@@ -276,10 +285,10 @@ void displayUpdateTask(void *pvParameters)
 
     u8g2.setCursor(46, 30);
     // u8g2.print((char)RX_Message[0]);
-    // u8g2.print(RX_Message[1]);
-    // u8g2.print(RX_Message[2]);
-    // u8g2.print(HAL_GetUIDw0());
-    u8g2.print(westDetect, HEX);
+    u8g2.print(RX_Message[1]);
+    u8g2.print(RX_Message[2]);
+    //u8g2.print(HAL_GetUIDw0());
+    //u8g2.print(westDetect, HEX);
     u8g2.setCursor(66, 30);
     u8g2.print(eastDetect, HEX);
     // u8g2.print(HAL_GetUIDw2());
@@ -338,27 +347,27 @@ void decodeTask(void *pvParameters)
     {
       pressOrReceive = false;
       // Line below is essentially this: currentStepSize = 0;
-      // __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
+      __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
     }
   }
 }
 
-// void CAN_TX_Task(void *pvParameters)
-// {
-//   uint8_t msgOut[8];
-//   while (1)
-//   {
-//     xQueueReceive(msgOutQ, msgOut, portMAX_DELAY);
-//     xSemaphoreTake(CAN_TX_Semaphore, portMAX_DELAY);
-//     CAN_TX(0x123, msgOut);
-//   }
-// }
+void CAN_TX_Task(void *pvParameters) {
+  uint8_t msgOut[8];
+  while (1)
+  {
+    xQueueReceive(msgOutQ, msgOut, portMAX_DELAY);
+    xSemaphoreTake(CAN_TX_Semaphore, portMAX_DELAY);
+    CAN_TX(0x123, msgOut);
+  }
+}
 
 void setup()
 {
   // put your setup code here, to run once:
 
   msgInQ = xQueueCreate(36, 8);
+  msgOutQ = xQueueCreate(36, 8);
 
   // Set pin directions
   pinMode(RA0_PIN, OUTPUT);
@@ -418,14 +427,14 @@ void setup()
       1,               /* Task priority */
       &decodeTaskHandle);
 
-  // TaskHandle_t CAN_TX_TaskHandle = NULL;
-  // xTaskCreate(
-  //     CAN_TX_Task,      /* Function that implements the task */
-  //     "CAN_TX_Message", /* Text name for the task */
-  //     256,              /* Stack size in words, not bytes */
-  //     NULL,             /* Parameter passed into the task */
-  //     1,                /* Task priority */
-  //     &CAN_TX_TaskHandle);
+  TaskHandle_t CAN_TX_TaskHandle = NULL;
+  xTaskCreate(
+      CAN_TX_Task,      /* Function that implements the task */
+      "CAN_TX_Message", /* Text name for the task */
+      256,              /* Stack size in words, not bytes */
+      NULL,             /* Parameter passed into the task */
+      1,                /* Task priority */
+      &CAN_TX_TaskHandle);
 
   TaskHandle_t handshakeTaskHandle = NULL;
   xTaskCreate(
@@ -440,7 +449,7 @@ void setup()
   keyArrayMutex = xSemaphoreCreateMutex();
   queueReceiveMutex = xSemaphoreCreateMutex();
 
-  // CAN_TX_Semaphore = xSemaphoreCreateCounting(3, 3);
+  CAN_TX_Semaphore = xSemaphoreCreateCounting(3, 3);
 
   CAN_Init(false);
   setCANFilter(0x123, 0x7ff);
