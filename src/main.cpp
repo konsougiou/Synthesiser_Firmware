@@ -184,7 +184,8 @@ void scanKeysTask(void *pvParameters)
 
     uint32_t tmpCurrentStepSize = 0;
     // extracting the step size
-
+    // TX_Message[3] = ((HAL_GetUIDw0() + HAL_GetUIDw1() + HAL_GetUIDw2()) && 0xFF);
+    TX_Message[3] = (0x85ebca6b*((HAL_GetUIDw0() ^ HAL_GetUIDw1() ^ HAL_GetUIDw2()) ^ ((HAL_GetUIDw0() ^ HAL_GetUIDw1() ^ HAL_GetUIDw2())>>16)))& 0xFF;
     TX_Message[0] = 82;
     bool key_pressed = false;
 
@@ -254,15 +255,39 @@ void scanKeysTask(void *pvParameters)
     }
     __atomic_store_n(&localOctave, tempLocalOctave, __ATOMIC_RELAXED);
 
-    if (key_pressed)
+
+    if (key_pressed != keyPressedPrev)
+    {
+      if (key_pressed){ TX_Message[0] = 80;}
+      xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
+    }
+    else if (key_pressed)
     {
       TX_Message[0] = 80;
       xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
     }
-    else if (key_pressed != keyPressedPrev)
-    {
-      xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
-    }
+    // if (key_pressed)
+    // {
+    //   TX_Message[0] = 80;
+    //   xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
+    // }
+    // if (key_pressed != keyPressedPrev)
+    // { 
+    //   xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
+    // } 
+
+    // if (key_pressed  & !keyPressedPrev)
+    // {
+    //   TX_Message[0] = 80;
+    //   xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
+    // }
+    
+    // if (!key_pressed & keyPressedPrev)
+    // {
+    //   TX_Message[0] = 82;
+    //   xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
+    // }
+  
 
     // CAN_TX(0x123, (uint8_t *)TX_Message); // Sending the CAN message with scanned keys.
 
@@ -275,6 +300,7 @@ void scanKeysTask(void *pvParameters)
       // Their code comes in
       continue;
     }
+
 
     keyPressedPrev = key_pressed;
     knob3->setLimits(8, 0);
@@ -289,7 +315,8 @@ void displayUpdateTask(void *pvParameters)
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
   uint32_t ID;
-  uint8_t RX_Message[8] = {0};
+  // uint8_t RX_Message[8] = {0};
+  uint8_t tempRX_Message[8] = {0};
 
   while (1)
   {
@@ -316,22 +343,30 @@ void displayUpdateTask(void *pvParameters)
 
     uint32_t tmpStepSize = __atomic_load_n(&currentStepSize, __ATOMIC_RELAXED);
     u8g2.println(tmpStepSize);
-    u8g2.setCursor(2, 30);
+    u8g2.setCursor(82, 30);
     uint8_t tmpKnob3Rotation = __atomic_load_n(&knob3Rotation, __ATOMIC_RELAXED);
     u8g2.println(tmpKnob3Rotation, DEC);
+
+    xSemaphoreTake(queueReceiveMutex, portMAX_DELAY);
+
+    std::copy(std::begin(RX_Message), std::end(RX_Message), std::begin(tempRX_Message));
+
+    xSemaphoreGive(queueReceiveMutex);
 
     while (CAN_CheckRXLevel())
       CAN_RX(ID, RX_Message);
 
-    u8g2.setCursor(46, 30);
+    //u8g2.setCursor(46, 30);
     // u8g2.print((char)RX_Message[0]);
-    u8g2.print(TX_Message[1]);
+    //u8g2.print(TX_Message[1]);
     // u8g2.print(RX_Message[2]);
     // u8g2.print(HAL_GetUIDw0());
 
-    u8g2.setCursor(66, 30);
-    u8g2.print(eastDetect, HEX);
-    u8g2.print(westDetect, HEX);
+    u8g2.setCursor(2, 30);
+    u8g2.print(HAL_GetUIDw0(), HEX);
+    u8g2.setCursor(50, 30);
+
+    u8g2.print(tempRX_Message[3], HEX);
     // u8g2.print(HAL_GetUIDw2());
 
     u8g2.setCursor(40, 20);
@@ -352,9 +387,9 @@ void displayUpdateTask(void *pvParameters)
       u8g2.drawStr(60, 20, "-_-");
     }
 
-    u8g2.setCursor(86, 30);
-    uint32_t tmpLocalOctave = __atomic_load_n(&localOctave, __ATOMIC_RELAXED);
-    u8g2.print(tmpLocalOctave, HEX);
+  //  u8g2.setCursor(86, 30);
+    //uint32_t tmpLocalOctave = __atomic_load_n(&localOctave, __ATOMIC_RELAXED);
+    //u8g2.print(tmpLocalOctave, HEX);
     // TODO: octave thing in the morning
 
     u8g2.sendBuffer(); // transfer internal memory to the display
@@ -382,18 +417,19 @@ void decodeTask(void *pvParameters)
 
     xSemaphoreGive(queueReceiveMutex);
 
-    if (RX_Message[0] == 0x50)
-    {
-      pressOrReceive = true;
-      uint32_t dTmpCurrentStepSize = stepSizes[RX_Message[2]] << ((RX_Message[1]) - 4);
-      __atomic_store_n(&currentStepSize, dTmpCurrentStepSize, __ATOMIC_RELAXED);
-    }
-    else
-    {
-      pressOrReceive = false;
-      // Line below is essentially this: currentStepSize = 0;
-      __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
-    }
+    if((RX_Message[3] != (0x85ebca6b*((HAL_GetUIDw0() ^ HAL_GetUIDw1() ^ HAL_GetUIDw2()) ^ ((HAL_GetUIDw0() ^ HAL_GetUIDw1() ^ HAL_GetUIDw2())>>16)))& 0xFF)){
+        if (RX_Message[0] == 0x50) {
+          pressOrReceive = true;
+          uint32_t dTmpCurrentStepSize = stepSizes[RX_Message[2]] << ((RX_Message[1]) - 4);
+          __atomic_store_n(&currentStepSize, dTmpCurrentStepSize, __ATOMIC_RELAXED);
+        }
+        else 
+        {
+          pressOrReceive = false;
+          // Line below is essentially this: currentStepSize = 0;
+          __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
+        }
+      }
   }
 }
 

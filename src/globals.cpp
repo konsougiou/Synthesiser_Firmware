@@ -33,6 +33,6 @@ SemaphoreHandle_t CAN_TX_Semaphore;
 
 bool pressOrReceive = false; // False == Receive, True == Press
 
-uint8_t knob3Rotation = 4;
+uint8_t knob3Rotation = 6;
 
 knob *knob3 = new knob(3);
