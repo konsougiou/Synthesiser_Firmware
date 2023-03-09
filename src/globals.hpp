@@ -14,10 +14,14 @@ extern volatile uint8_t localOctave;
 
 extern volatile uint32_t currentStepSize;
 
+extern uint32_t currentStepSizes[36];
+
 extern volatile uint8_t keyArray[7];
 
 extern SemaphoreHandle_t keyArrayMutex;
 extern SemaphoreHandle_t queueReceiveMutex;
+extern SemaphoreHandle_t currentStepSizesMutex;
+extern SemaphoreHandle_t decodeStepSizesMutex;
 
 extern SemaphoreHandle_t CAN_TX_Semaphore;
 

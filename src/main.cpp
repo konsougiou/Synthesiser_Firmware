@@ -52,17 +52,44 @@ void setOutMuxBit(const uint8_t bitIdx, const bool value)
 
 void sampleISR()
 {
-  static uint32_t phaseAcc = 0;
+  // static uint32_t phaseAcc = 0;
 
-  phaseAcc += currentStepSize;
-  int32_t Vout = (phaseAcc >> 24) - 128;
-  Vout = Vout >> (8 - knob3Rotation);
-  if (knob3Rotation == 0)
-  {
-    Vout = 0;
+  // phaseAcc += currentStepSize;
+  // int32_t Vout = (phaseAcc >> 24) - 128;
+  // Vout = Vout >> (8 - knob3Rotation);
+  // if (knob3Rotation == 0)
+  // {
+  //   Vout = 0;
+  // }
+
+  // analogWrite(OUTR_PIN, Vout + 128);
+
+  static uint32_t phaseAccArray[36] = {0};
+  int32_t totalVout = 0;
+  int32_t Vout;
+  for(int z=0;z<36;z++){
+    if(currentStepSizes[z]==0){
+      phaseAccArray[z]=0;
+      Vout = 0;
+    }
+    else{
+      phaseAccArray[z] += currentStepSizes[z];
+      Vout = (phaseAccArray[z] >> 24) - 128;
+    }
+    //Vout = (phaseAccArray[z] >> 24) - 128;
+    //Vout = Vout >> (8 - knob3Rotation);
+    // Vout = min(128, (int) Vout);
+    // Vout = max(-128, (int) Vout);
+    totalVout += Vout;
   }
+  totalVout = totalVout >> (8 - knob3Rotation);
+  totalVout = min(255, (int) totalVout+128);
+  totalVout = max(0, (int) totalVout);
 
-  analogWrite(OUTR_PIN, Vout + 128);
+  if (knob3Rotation == 0){
+    totalVout = 0;
+  }
+  analogWrite(OUTR_PIN, totalVout);
 }
 
 uint8_t readCols()
@@ -143,22 +170,27 @@ void scanKeysTask(void *pvParameters)
   TickType_t xLastWakeTime = xTaskGetTickCount();
   uint8_t localKeyArray[5];
 
-  // uint8_t TX_Message[8] = {0};
+  //uint8_t TX_Message[8] = {0};
   uint32_t ID;
   bool keyPressedPrev = false;
 
   // uint8_t localOctave = 4;
-  uint8_t tempLocalOctave = 5;
+  uint8_t tempLocalOctave = 4;
+
+
+  uint32_t localCurrentStepSizes[12] = {0};
 
   // step Sizes for 4th octave
   // const uint32_t localstepSizes[] = {51069198, 54102708, 57316409, 60721004, 64327831, 68148905,
   //                                    72196950, 76485448, 81028684, 85841788, 90940790, 96342673};
 
   // volatile uint8_t TX_Message[8] = {0};
-
   while (1)
   {
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
+
+    //uint8_t TX_Message[8] = {0};
+    uint32_t localCurrentStepSizes[12] = {0};
 
     xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
 
@@ -185,8 +217,8 @@ void scanKeysTask(void *pvParameters)
     uint32_t tmpCurrentStepSize = 0;
     // extracting the step size
     // TX_Message[3] = ((HAL_GetUIDw0() + HAL_GetUIDw1() + HAL_GetUIDw2()) && 0xFF);
-    TX_Message[3] = (0x85ebca6b*((HAL_GetUIDw0() ^ HAL_GetUIDw1() ^ HAL_GetUIDw2()) ^ ((HAL_GetUIDw0() ^ HAL_GetUIDw1() ^ HAL_GetUIDw2())>>16)))& 0xFF;
-    TX_Message[0] = 82;
+    // TX_Message[3] = (0x85ebca6b*((HAL_GetUIDw0() ^ HAL_GetUIDw1() ^ HAL_GetUIDw2()) ^ ((HAL_GetUIDw0() ^ HAL_GetUIDw1() ^ HAL_GetUIDw2())>>16)))& 0xFF;
+    // TX_Message[0] = 82;
     bool key_pressed = false;
 
     for (int i = 0; i < 3; i++)
@@ -202,32 +234,33 @@ void scanKeysTask(void *pvParameters)
       uint8_t key2 = (keyGroup % 4) >> 1;
       uint8_t key1 = (keyGroup % 2);
       uint8_t keyOffset = i * 4;
-
+      TX_Message[i] = 0;
       if (!key1)
       {
-        tmpCurrentStepSize = stepSizes[keyOffset];
+        localCurrentStepSizes[keyOffset] = stepSizes[keyOffset] << (localOctave - 4);
         key_pressed = true;
-        TX_Message[2] = keyOffset;
+        TX_Message[i] += 1;
       }
       if (!key2)
       {
-        tmpCurrentStepSize = stepSizes[keyOffset + 1];
+        localCurrentStepSizes[keyOffset + 1] = stepSizes[keyOffset + 1] << (localOctave - 4);
         key_pressed = true;
-        TX_Message[2] = keyOffset + 1;
+        TX_Message[i] += 2;
       }
       if (!key3)
       {
-        tmpCurrentStepSize = stepSizes[keyOffset + 2];
+        localCurrentStepSizes[keyOffset + 2] = stepSizes[keyOffset + 2] << (localOctave - 4);
         key_pressed = true;
-        TX_Message[2] = keyOffset + 2;
+        TX_Message[i] += 4;
       }
       if (!key4)
       {
-        tmpCurrentStepSize = stepSizes[keyOffset + 3];
+        localCurrentStepSizes[keyOffset + 3] = stepSizes[keyOffset + 3] << (localOctave - 4);
         key_pressed = true;
-        TX_Message[2] = keyOffset + 3;
+        TX_Message[i] += 8;
       }
     };
+
     // TX_Message[1] = 4;
 
     // Need to set the local octave as well.
@@ -235,37 +268,61 @@ void scanKeysTask(void *pvParameters)
     // preferably on-the-fly
     if ((westDetect == 0x7) && (eastDetect == 0x7)) // Centre
     {
-      TX_Message[1] = 5;
+      TX_Message[3] = 5;
       tempLocalOctave = 5;
     }
     else if ((westDetect == 0x7) && (eastDetect == 0xF)) // Right
     {
-      TX_Message[1] = 6;
+      TX_Message[3] = 6;
       tempLocalOctave = 6;
     }
     else if ((westDetect == 0xF) && (eastDetect == 0x7)) // Left
     {
-      TX_Message[1] = 4;
+      TX_Message[3] = 4;
       tempLocalOctave = 4;
     }
-    else // Centre
+    else 
     {
-      TX_Message[1] = 9;
+      TX_Message[3] = 9;
       tempLocalOctave = 9;
     }
     __atomic_store_n(&localOctave, tempLocalOctave, __ATOMIC_RELAXED);
+    
+    xSemaphoreTake(currentStepSizesMutex, portMAX_DELAY);
+
+    if (tempLocalOctave == 4)
+    {
+      std::copy(std::begin(localCurrentStepSizes), std::end(localCurrentStepSizes), std::begin(currentStepSizes)); // change back to this
+    }
+    else{
+      for (uint8_t i = 0; i < 12; i++){ 
+        uint8_t idx = (12*(tempLocalOctave - 4)) + i;
+        currentStepSizes[idx] = localCurrentStepSizes[i]; 
+      }
+    }
+
+    xSemaphoreGive(currentStepSizesMutex);
+
+    // __atomic_store_n(&localOctave, tempLocalOctave, __ATOMIC_RELAXED);
 
 
-    if (key_pressed != keyPressedPrev)
+    // if (key_pressed != keyPressedPrev)
+    // {
+    //   if (key_pressed)
+    //   { 
+    //     // TX_Message[0] = 80;
+    //   }
+    //   xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
+    // }
+    // else 
+    
+    if (key_pressed|| (key_pressed != keyPressedPrev))
     {
-      if (key_pressed){ TX_Message[0] = 80;}
+      // TX_Message[0] = 80;
       xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
     }
-    else if (key_pressed)
-    {
-      TX_Message[0] = 80;
-      xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
-    }
+
+    
     // if (key_pressed)
     // {
     //   TX_Message[0] = 80;
@@ -290,16 +347,6 @@ void scanKeysTask(void *pvParameters)
   
 
     // CAN_TX(0x123, (uint8_t *)TX_Message); // Sending the CAN message with scanned keys.
-
-    if (pressOrReceive == false)
-    {
-      __atomic_store_n(&currentStepSize, tmpCurrentStepSize, __ATOMIC_RELAXED);
-    }
-    else
-    {
-      // Their code comes in
-      continue;
-    }
 
 
     keyPressedPrev = key_pressed;
@@ -337,60 +384,69 @@ void displayUpdateTask(void *pvParameters)
 
     // u8g2.print(currentStepSize);
 
-    u8g2.setCursor(2, 10);
-    u8g2.println(byte1 + byte2 + byte3, BIN);
-    u8g2.setCursor(2, 20);
-
-    uint32_t tmpStepSize = __atomic_load_n(&currentStepSize, __ATOMIC_RELAXED);
-    u8g2.println(tmpStepSize);
-    u8g2.setCursor(82, 30);
-    uint8_t tmpKnob3Rotation = __atomic_load_n(&knob3Rotation, __ATOMIC_RELAXED);
-    u8g2.println(tmpKnob3Rotation, DEC);
-
     xSemaphoreTake(queueReceiveMutex, portMAX_DELAY);
 
     std::copy(std::begin(RX_Message), std::end(RX_Message), std::begin(tempRX_Message));
 
     xSemaphoreGive(queueReceiveMutex);
 
+    xSemaphoreTake(currentStepSizesMutex, portMAX_DELAY);
+
+    u8g2.setCursor(2, 10);
+    u8g2.print(currentStepSizes[0], HEX);
+    u8g2.setCursor(42, 10);
+    u8g2.print(currentStepSizes[12], BIN);
+    u8g2.setCursor(82, 10);
+    u8g2.print(currentStepSizes[24], HEX);
+
+    xSemaphoreGive(currentStepSizesMutex);
+
+
+    u8g2.setCursor(2, 20);
+    u8g2.println(tempRX_Message[0], BIN);
+    u8g2.setCursor(2, 20);
+
+    uint32_t tmpStepSize = __atomic_load_n(&currentStepSize, __ATOMIC_RELAXED);
+    u8g2.println(tempRX_Message[1], BIN);
+    u8g2.setCursor(82, 30);
+    uint8_t tmpKnob3Rotation = __atomic_load_n(&knob3Rotation, __ATOMIC_RELAXED);
+    u8g2.println(tmpKnob3Rotation, DEC);
+
     while (CAN_CheckRXLevel())
       CAN_RX(ID, RX_Message);
 
-    //u8g2.setCursor(46, 30);
+    // u8g2.setCursor(46, 30);
     // u8g2.print((char)RX_Message[0]);
-    //u8g2.print(TX_Message[1]);
+    // u8g2.print(TX_Message[1]);
     // u8g2.print(RX_Message[2]);
     // u8g2.print(HAL_GetUIDw0());
 
-    u8g2.setCursor(2, 30);
-    u8g2.print(HAL_GetUIDw0(), HEX);
+    u8g2.setCursor(42, 20);
+    u8g2.print(tempRX_Message[2], BIN);
     u8g2.setCursor(50, 30);
-
-    u8g2.print(tempRX_Message[3], HEX);
-    // u8g2.print(HAL_GetUIDw2());
+    u8g2.print(tempRX_Message[3], HEX); // Displays the octave
 
     u8g2.setCursor(40, 20);
     if ((westDetect == 0x7) && (eastDetect == 0x7))
     {
-      u8g2.drawStr(60, 20, "Centre");
+      u8g2.drawStr(80, 20, "Centre");
     }
     else if ((westDetect == 0x7) && (eastDetect == 0xF))
     {
-      u8g2.drawStr(60, 20, "Right");
+      u8g2.drawStr(80, 20, "Right");
     }
     else if ((westDetect == 0xF) && (eastDetect == 0x7))
     {
-      u8g2.drawStr(60, 20, "Left");
+      u8g2.drawStr(80, 20, "Left");
     }
     else
     {
-      u8g2.drawStr(60, 20, "-_-");
+      u8g2.drawStr(80, 20, "-_-");
     }
 
   //  u8g2.setCursor(86, 30);
     //uint32_t tmpLocalOctave = __atomic_load_n(&localOctave, __ATOMIC_RELAXED);
     //u8g2.print(tmpLocalOctave, HEX);
-    // TODO: octave thing in the morning
 
     u8g2.sendBuffer(); // transfer internal memory to the display
 
@@ -403,13 +459,16 @@ void decodeTask(void *pvParameters)
   const TickType_t xFrequency = 80 / portTICK_PERIOD_MS;
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  // bool pressOrReceive = false; // False == Receive, True == Press
   uint8_t tempRX_Message[8] = {0};
+  //uint8_t localCurrentStepSizes[12] = {0};
 
   while (1)
   {
-    // vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    
     xQueueReceive(msgInQ, tempRX_Message, portMAX_DELAY);
+
+    uint8_t localCurrentStepSizes[12] = {0};
 
     xSemaphoreTake(queueReceiveMutex, portMAX_DELAY);
 
@@ -417,21 +476,69 @@ void decodeTask(void *pvParameters)
 
     xSemaphoreGive(queueReceiveMutex);
 
-    if((RX_Message[3] != (0x85ebca6b*((HAL_GetUIDw0() ^ HAL_GetUIDw1() ^ HAL_GetUIDw2()) ^ ((HAL_GetUIDw0() ^ HAL_GetUIDw1() ^ HAL_GetUIDw2())>>16)))& 0xFF)){
-        if (RX_Message[0] == 0x50) {
-          pressOrReceive = true;
-          uint32_t dTmpCurrentStepSize = stepSizes[RX_Message[2]] << ((RX_Message[1]) - 4);
-          __atomic_store_n(&currentStepSize, dTmpCurrentStepSize, __ATOMIC_RELAXED);
-        }
-        else 
-        {
-          pressOrReceive = false;
-          // Line below is essentially this: currentStepSize = 0;
-          __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
-        }
+    // xSemaphoreTake(decodeStepSizesMutex, portMAX_DELAY);
+
+    // std::copy(std::begin(StepSizes), std::end(StepSizes), std::begin(tempStepSizes));
+
+    // xSemaphoreGive(decodeStepSizesMutex);    
+
+    // if((RX_Message[3] != (0x85ebca6b*((HAL_GetUIDw0() ^ HAL_GetUIDw1() ^ HAL_GetUIDw2()) ^ ((HAL_GetUIDw0() ^ HAL_GetUIDw1() ^ HAL_GetUIDw2())>>16)))& 0xFF)){
+    //     if (RX_Message[0] == 0x50) {
+    //       pressOrReceive = true;
+    //       uint32_t dTmpCurrentStepSize = stepSizes[RX_Message[2]] << ((RX_Message[1]) - 4);
+    //       __atomic_store_n(&currentStepSize, dTmpCurrentStepSize, __ATOMIC_RELAXED);
+    //     }
+    //     else 
+    //     {
+    //       pressOrReceive = false;
+    //       // Line below is essentially this: currentStepSize = 0;
+    //       __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
+    //     }
+    //   }
+
+    uint32_t RX_Octave = RX_Message[3];
+    for(int i = 0; i < 3; i++){
+      uint32_t keyGroup = RX_Message[i];
+      uint8_t key4 = (keyGroup % 16) >> 3;
+      uint8_t key3 = (keyGroup % 8) >> 2;
+      uint8_t key2 = (keyGroup % 4) >> 1;
+      uint8_t key1 = (keyGroup % 2);
+      uint8_t keyOffset = i * 4;
+      if (key1)
+      {
+        localCurrentStepSizes[keyOffset] = stepSizes[keyOffset] << (RX_Octave - 4);
       }
+      if (key2)
+      {
+        localCurrentStepSizes[keyOffset + 1] = stepSizes[keyOffset + 1] << (RX_Octave - 4);
+      }
+      if (key3)
+      {
+        localCurrentStepSizes[keyOffset + 2] = stepSizes[keyOffset + 2] << (RX_Octave - 4);
+      }
+      if (key4)
+      {
+        localCurrentStepSizes[keyOffset + 3] = stepSizes[keyOffset + 3] << (RX_Octave - 4);
+      }
+    }
+    
+    xSemaphoreTake(currentStepSizesMutex, portMAX_DELAY);
+
+    //std::copy(std::begin(localCurrentStepSizes), std::end(localCurrentStepSizes), std::begin(currentStepSizes) + (12 *(RX_Octave - 4)));
+    // for (int i = 0; i < 12; i++){
+    //   currentStepSizes[12*(RX_Octave - 4) + i] = localCurrentStepSizes[i]; 
+    // }
+
+    for (uint8_t i = 0; i < 12; i++){ 
+        uint8_t idx = (12*(RX_Octave - 4)) + i;
+        currentStepSizes[idx] = localCurrentStepSizes[i]; 
+    }
+
+    xSemaphoreGive(currentStepSizesMutex);
   }
+    
 }
+  
 
 void CAN_TX_Task(void *pvParameters)
 {
@@ -526,10 +633,13 @@ void setup()
       NULL,            /* Parameter passed into the task */
       1,               /* Task priority */
       &decodeTaskHandle);
+    
 
   // Create the mutex and assign its handle in the setup function
   keyArrayMutex = xSemaphoreCreateMutex();
   queueReceiveMutex = xSemaphoreCreateMutex();
+  currentStepSizesMutex = xSemaphoreCreateMutex();
+  decodeStepSizesMutex = xSemaphoreCreateMutex();
 
   CAN_TX_Semaphore = xSemaphoreCreateCounting(3, 3);
 

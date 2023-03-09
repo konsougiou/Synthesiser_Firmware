@@ -12,6 +12,7 @@ const uint32_t step_scaling = pow(2, 32) / 22000;
 const uint32_t stepSizes[] = {51069198, 54102708, 57316409, 60721004, 64327831, 68148905,
                               72196950, 76485448, 81028684, 85841788, 90940790, 96342673};
 
+
 volatile uint8_t localOctave = 4;
 
 volatile uint32_t currentStepSize = 0;
@@ -23,11 +24,15 @@ volatile uint8_t keyArray[7];
 QueueHandle_t msgInQ;
 QueueHandle_t msgOutQ;
 
+uint32_t currentStepSizes[36] = {0};
+
 uint8_t RX_Message[8] = {0};
 uint8_t TX_Message[8] = {0};
 
 SemaphoreHandle_t keyArrayMutex;
 SemaphoreHandle_t queueReceiveMutex;
+SemaphoreHandle_t currentStepSizesMutex;
+SemaphoreHandle_t decodeStepSizesMutex;
 
 SemaphoreHandle_t CAN_TX_Semaphore;
 
