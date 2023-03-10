@@ -15,6 +15,7 @@ extern volatile uint8_t localOctave;
 extern volatile uint32_t currentStepSize;
 
 extern uint32_t currentStepSizes[36];
+extern uint32_t prevStepSizes[36];
 
 extern volatile uint8_t keyArray[7];
 
@@ -38,5 +39,7 @@ extern uint8_t knob3State;
 
 extern uint8_t westDetect;
 extern uint8_t eastDetect;
+
+extern uint8_t reverb;
 
 extern knob *knob3;

@@ -25,6 +25,7 @@ QueueHandle_t msgInQ;
 QueueHandle_t msgOutQ;
 
 uint32_t currentStepSizes[36] = {0};
+uint32_t prevStepSizes[36] = {0};
 
 uint8_t RX_Message[8] = {0};
 uint8_t TX_Message[8] = {0};
@@ -42,5 +43,7 @@ SemaphoreHandle_t CAN_TX_Semaphore;
 bool pressOrReceive = false; // False == Receive, True == Press
 
 uint8_t knob3Rotation = 6;
+
+uint8_t reverb = 0;
 
 knob *knob3 = new knob(3);

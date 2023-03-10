@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <U8g2lib.h>
 #include <math.h>
+#include <numeric>
 #include <STM32FreeRTOS.h>
 #include <ES_CAN.h>
 
@@ -66,25 +67,54 @@ void sampleISR()
 
   static uint32_t phaseAccArray[36] = {0};
   static uint32_t Vouts[36] = {0};
+  static uint32_t decayCounters[36] = {0};
+  static uint32_t internalCounters[36] = {0};
   int32_t totalVout = 0;
   int32_t Vout;
   for(int z=0;z<36;z++){
+    Vout = 0;
     if(currentStepSizes[z]==0){
-      phaseAccArray[z]=0;
-      Vout = 0;
+      if(prevStepSizes[z] != 0 && reverb){
+        if (decayCounters[z] == 22000){
+          decayCounters[z] = 0; 
+          prevStepSizes[z] = 0;
+          internalCounters[z] = 0;
+          continue;
+        }
+
+        decayCounters[z] += 1; 
+
+        if (decayCounters[z] % (2750 / reverb) == 0){
+          internalCounters[z] += 1;
+        } 
+       phaseAccArray[z] += prevStepSizes[z]; 
+       Vout = (phaseAccArray[z] >> 24) >> internalCounters[z];
+      } 
+      else{
+      phaseAccArray[z]= 0;
+      }
+      //phaseAccArray[z] * ((uint32_t) 0.9);
+      //Vouts[z] = (phaseAccArray[z] >> 24) - 128;
+      //Vout = Vouts[z]; 
+      //Vouts[z] = 0; //Vout * ((uint32_t) 0.999);
+      //phaseAccArray[z] += prevStepSizes[z];
+      //Vout = (phaseAccArray[z] >> 24) - 128;
+      //Vouts[z] = (phaseAccArray[z] >> 24) - 128;
     }
     else{
       phaseAccArray[z] += currentStepSizes[z];
-      Vout = (phaseAccArray[z] >> 24) - 128;
+      //Vout = (phaseAccArray[z] >> 24) - 128;
+      Vout = (phaseAccArray[z] >> 24);
     }
+    totalVout += Vout;
     //Vout = (phaseAccArray[z] >> 24) - 128;
     //Vout = Vout >> (8 - knob3Rotation);
     // Vout = min(128, (int) Vout);
     // Vout = max(-128, (int) Vout);
-    totalVout += Vout;
   }
+  //totalVout = Vout;//std::accumulate(std::begin(Vouts), std::end(Vouts), 0);
   totalVout = totalVout >> (8 - knob3Rotation);
-  totalVout = min(255, (int) totalVout+128);
+  totalVout = min(255, (int) totalVout);
   totalVout = max(0, (int) totalVout);
 
   if (knob3Rotation == 0){
@@ -167,7 +197,7 @@ void handshakeTask(void *pvParameters)
 void scanKeysTask(void *pvParameters)
 {
 
-  const TickType_t xFrequency = 30 / portTICK_PERIOD_MS;
+  const TickType_t xFrequency = 25 / portTICK_PERIOD_MS;
   TickType_t xLastWakeTime = xTaskGetTickCount();
   uint8_t localKeyArray[5];
 
@@ -274,8 +304,8 @@ void scanKeysTask(void *pvParameters)
     }
     else if ((westDetect == 0x7) && (eastDetect == 0xF)) // Right
     {
-      TX_Message[3] = 6;
-      tempLocalOctave = 6;
+      TX_Message[3] = 5;
+      tempLocalOctave = 5;
     }
     else if ((westDetect == 0xF) && (eastDetect == 0x7)) // Left
     {
@@ -291,63 +321,34 @@ void scanKeysTask(void *pvParameters)
     
     xSemaphoreTake(currentStepSizesMutex, portMAX_DELAY);
 
-    if (tempLocalOctave == 4)
+    if (false)
     {
-      std::copy(std::begin(localCurrentStepSizes), std::end(localCurrentStepSizes), std::begin(currentStepSizes)); // change back to this
+      //std::copy(std::begin(localCurrentStepSizes), std::end(localCurrentStepSizes), std::begin(currentStepSizes)); // change back to this
+      for (uint8_t i = 0; i < 12; i++){ 
+        currentStepSizes[i] = localCurrentStepSizes[i];
+        if (localCurrentStepSizes[i] != 0){
+        prevStepSizes[i] = localCurrentStepSizes[i]; 
+        }
+      } 
     }
     else{
       for (uint8_t i = 0; i < 12; i++){ 
         uint8_t idx = (12*(tempLocalOctave - 4)) + i;
         currentStepSizes[idx] = localCurrentStepSizes[i]; 
+        if (localCurrentStepSizes[i] != 0){
+        prevStepSizes[idx] = localCurrentStepSizes[i]; 
+      }
       }
     }
 
     xSemaphoreGive(currentStepSizesMutex);
 
-    // __atomic_store_n(&localOctave, tempLocalOctave, __ATOMIC_RELAXED);
-
-
-    // if (key_pressed != keyPressedPrev)
-    // {
-    //   if (key_pressed)
-    //   { 
-    //     // TX_Message[0] = 80;
-    //   }
-    //   xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
-    // }
-    // else 
     
     if ((key_pressed || (key_pressed != keyPressedPrev)) && !(westDetect == 15 && eastDetect == 15))
     {
       // TX_Message[0] = 80;
       xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
     }
-
-    
-    // if (key_pressed)
-    // {
-    //   TX_Message[0] = 80;
-    //   xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
-    // }
-    // if (key_pressed != keyPressedPrev)
-    // { 
-    //   xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
-    // } 
-
-    // if (key_pressed  & !keyPressedPrev)
-    // {
-    //   TX_Message[0] = 80;
-    //   xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
-    // }
-    
-    // if (!key_pressed & keyPressedPrev)
-    // {
-    //   TX_Message[0] = 82;
-    //   xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
-    // }
-  
-
-    // CAN_TX(0x123, (uint8_t *)TX_Message); // Sending the CAN message with scanned keys.
 
 
     keyPressedPrev = key_pressed;
@@ -396,22 +397,28 @@ void displayUpdateTask(void *pvParameters)
     u8g2.setCursor(2, 10);
     u8g2.print(currentStepSizes[0], HEX);
     u8g2.setCursor(42, 10);
-    u8g2.print(currentStepSizes[12], HEX);
+    u8g2.print(currentStepSizes[1], HEX);
     u8g2.setCursor(82, 10);
-    u8g2.print(currentStepSizes[24], HEX);
+    u8g2.print(currentStepSizes[2], HEX);
+    u8g2.setCursor(2, 20);
+    u8g2.print(prevStepSizes[0], HEX);
+    u8g2.setCursor(42, 20);
+    u8g2.print(prevStepSizes[1], HEX);
+    u8g2.setCursor(82, 20);
+    u8g2.print(prevStepSizes[2], HEX);
 
     xSemaphoreGive(currentStepSizesMutex);
 
 
-    u8g2.setCursor(2, 20);
-    u8g2.println(tempRX_Message[0], BIN);
-    u8g2.setCursor(2, 20);
+    // u8g2.setCursor(2, 20);
+    // u8g2.println(prevStepSizes[0], HEX);
+    // u8g2.setCursor(2, 20);
 
-    uint32_t tmpStepSize = __atomic_load_n(&currentStepSize, __ATOMIC_RELAXED);
-    u8g2.println(tempRX_Message[1], BIN);
+    // uint32_t tmpStepSize = __atomic_load_n(&currentStepSize, __ATOMIC_RELAXED);
+    // u8g2.println(prevStepSizes[1], HEX);
     u8g2.setCursor(82, 30);
     uint8_t tmpKnob3Rotation = __atomic_load_n(&knob3Rotation, __ATOMIC_RELAXED);
-    u8g2.println(tmpKnob3Rotation, DEC);
+    u8g2.println(tmpKnob3Rotation ,HEX);
 
     while (CAN_CheckRXLevel())
       CAN_RX(ID, RX_Message);
@@ -423,9 +430,9 @@ void displayUpdateTask(void *pvParameters)
     // u8g2.print(HAL_GetUIDw0());
 
     u8g2.setCursor(42, 20);
-    u8g2.print(tempRX_Message[2], BIN);
+    //u8g2.print(tempRX_Message[2], BIN);
     u8g2.setCursor(50, 30);
-    u8g2.print(tempRX_Message[3], HEX); // Displays the octave
+    //u8g2.print(tempRX_Message[3], HEX); // Displays the octave
 
     u8g2.setCursor(40, 20);
     if ((westDetect == 0x7) && (eastDetect == 0x7))
@@ -533,8 +540,10 @@ void decodeTask(void *pvParameters)
         for (uint8_t i = 0; i < 12; i++){ 
             uint8_t idx = (12*(RX_Octave - 4)) + i;
             currentStepSizes[idx] = localCurrentStepSizes[i]; 
-      }
-
+            if (localCurrentStepSizes[i] != 0){
+            prevStepSizes[idx] = localCurrentStepSizes[i]; 
+          }
+        }
         xSemaphoreGive(currentStepSizesMutex);
     }
    } 
