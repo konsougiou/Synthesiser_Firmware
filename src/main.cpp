@@ -65,6 +65,7 @@ void sampleISR()
   // analogWrite(OUTR_PIN, Vout + 128);
 
   static uint32_t phaseAccArray[36] = {0};
+  static uint32_t Vouts[36] = {0};
   int32_t totalVout = 0;
   int32_t Vout;
   for(int z=0;z<36;z++){
@@ -194,8 +195,8 @@ void scanKeysTask(void *pvParameters)
 
     xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
 
-    uint8_t westDetect = ((uint32_t)keyArray[5]); // % 16) >> 3;
-    uint8_t eastDetect = ((uint32_t)keyArray[6]); // % 16) >> 3;
+    westDetect = ((uint32_t)keyArray[5]); // % 16) >> 3;
+    eastDetect = ((uint32_t)keyArray[6]); // % 16) >> 3;
 
     xSemaphoreGive(keyArrayMutex);
 
@@ -283,8 +284,8 @@ void scanKeysTask(void *pvParameters)
     }
     else 
     {
-      TX_Message[3] = 9;
-      tempLocalOctave = 9;
+      TX_Message[3] = 4;
+      tempLocalOctave = 4;
     }
     __atomic_store_n(&localOctave, tempLocalOctave, __ATOMIC_RELAXED);
     
@@ -316,7 +317,7 @@ void scanKeysTask(void *pvParameters)
     // }
     // else 
     
-    if (key_pressed|| (key_pressed != keyPressedPrev))
+    if ((key_pressed || (key_pressed != keyPressedPrev)) && !(westDetect == 15 && eastDetect == 15))
     {
       // TX_Message[0] = 80;
       xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
@@ -374,8 +375,8 @@ void displayUpdateTask(void *pvParameters)
     uint32_t byte1 = ((uint32_t)keyArray[0]) << 8;
     uint32_t byte2 = ((uint32_t)keyArray[1]) << 4;
     uint32_t byte3 = (uint32_t)keyArray[2];
-    uint8_t westDetect = ((uint32_t)keyArray[5]); // % 16) >> 3;
-    uint8_t eastDetect = ((uint32_t)keyArray[6]); // % 16) >> 3;
+    westDetect = ((uint32_t)keyArray[5]); // % 16) >> 3;
+    eastDetect = ((uint32_t)keyArray[6]); // % 16) >> 3;
 
     xSemaphoreGive(keyArrayMutex);
 
@@ -395,7 +396,7 @@ void displayUpdateTask(void *pvParameters)
     u8g2.setCursor(2, 10);
     u8g2.print(currentStepSizes[0], HEX);
     u8g2.setCursor(42, 10);
-    u8g2.print(currentStepSizes[12], BIN);
+    u8g2.print(currentStepSizes[12], HEX);
     u8g2.setCursor(82, 10);
     u8g2.print(currentStepSizes[24], HEX);
 
@@ -441,7 +442,7 @@ void displayUpdateTask(void *pvParameters)
     }
     else
     {
-      u8g2.drawStr(80, 20, "-_-");
+      u8g2.print(eastDetect, DEC);
     }
 
   //  u8g2.setCursor(86, 30);
@@ -468,7 +469,7 @@ void decodeTask(void *pvParameters)
     
     xQueueReceive(msgInQ, tempRX_Message, portMAX_DELAY);
 
-    uint8_t localCurrentStepSizes[12] = {0};
+    uint32_t localCurrentStepSizes[12] = {0};
 
     xSemaphoreTake(queueReceiveMutex, portMAX_DELAY);
 
@@ -495,50 +496,49 @@ void decodeTask(void *pvParameters)
     //       __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
     //     }
     //   }
+    if (!(westDetect == 15 && eastDetect == 15)){
+      uint32_t RX_Octave = RX_Message[3];
+      for(int i = 0; i < 3; i++){
+        uint32_t keyGroup = RX_Message[i];
+        uint8_t key4 = (keyGroup % 16) >> 3;
+        uint8_t key3 = (keyGroup % 8) >> 2;
+        uint8_t key2 = (keyGroup % 4) >> 1;
+        uint8_t key1 = (keyGroup % 2);
+        uint8_t keyOffset = i * 4;
+        if (key1)
+        {
+          localCurrentStepSizes[keyOffset] = stepSizes[keyOffset] << (RX_Octave - 4);
+        }
+        if (key2)
+        {
+          localCurrentStepSizes[keyOffset + 1] = stepSizes[keyOffset + 1] << (RX_Octave - 4);
+        }
+        if (key3)
+        {
+          localCurrentStepSizes[keyOffset + 2] = stepSizes[keyOffset + 2] << (RX_Octave - 4);
+        }
+        if (key4)
+        {
+          localCurrentStepSizes[keyOffset + 3] = stepSizes[keyOffset + 3] << (RX_Octave - 4);
+        }
+      }
+      
+        xSemaphoreTake(currentStepSizesMutex, portMAX_DELAY);
 
-    uint32_t RX_Octave = RX_Message[3];
-    for(int i = 0; i < 3; i++){
-      uint32_t keyGroup = RX_Message[i];
-      uint8_t key4 = (keyGroup % 16) >> 3;
-      uint8_t key3 = (keyGroup % 8) >> 2;
-      uint8_t key2 = (keyGroup % 4) >> 1;
-      uint8_t key1 = (keyGroup % 2);
-      uint8_t keyOffset = i * 4;
-      if (key1)
-      {
-        localCurrentStepSizes[keyOffset] = stepSizes[keyOffset] << (RX_Octave - 4);
+        //std::copy(std::begin(localCurrentStepSizes), std::end(localCurrentStepSizes), std::begin(currentStepSizes) + (12 *(RX_Octave - 4)));
+        // for (int i = 0; i < 12; i++){
+        //   currentStepSizes[12*(RX_Octave - 4) + i] = localCurrentStepSizes[i]; 
+        // }
+
+        for (uint8_t i = 0; i < 12; i++){ 
+            uint8_t idx = (12*(RX_Octave - 4)) + i;
+            currentStepSizes[idx] = localCurrentStepSizes[i]; 
       }
-      if (key2)
-      {
-        localCurrentStepSizes[keyOffset + 1] = stepSizes[keyOffset + 1] << (RX_Octave - 4);
-      }
-      if (key3)
-      {
-        localCurrentStepSizes[keyOffset + 2] = stepSizes[keyOffset + 2] << (RX_Octave - 4);
-      }
-      if (key4)
-      {
-        localCurrentStepSizes[keyOffset + 3] = stepSizes[keyOffset + 3] << (RX_Octave - 4);
-      }
+
+        xSemaphoreGive(currentStepSizesMutex);
     }
-    
-    xSemaphoreTake(currentStepSizesMutex, portMAX_DELAY);
-
-    //std::copy(std::begin(localCurrentStepSizes), std::end(localCurrentStepSizes), std::begin(currentStepSizes) + (12 *(RX_Octave - 4)));
-    // for (int i = 0; i < 12; i++){
-    //   currentStepSizes[12*(RX_Octave - 4) + i] = localCurrentStepSizes[i]; 
-    // }
-
-    for (uint8_t i = 0; i < 12; i++){ 
-        uint8_t idx = (12*(RX_Octave - 4)) + i;
-        currentStepSizes[idx] = localCurrentStepSizes[i]; 
-    }
-
-    xSemaphoreGive(currentStepSizesMutex);
-  }
-    
+   } 
 }
-  
 
 void CAN_TX_Task(void *pvParameters)
 {

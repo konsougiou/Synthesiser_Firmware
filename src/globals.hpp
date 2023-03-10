@@ -36,4 +36,7 @@ extern uint8_t TX_Message[8];
 extern uint8_t knob3Rotation;
 extern uint8_t knob3State;
 
+extern uint8_t westDetect;
+extern uint8_t eastDetect;
+
 extern knob *knob3;

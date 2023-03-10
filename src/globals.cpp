@@ -29,6 +29,9 @@ uint32_t currentStepSizes[36] = {0};
 uint8_t RX_Message[8] = {0};
 uint8_t TX_Message[8] = {0};
 
+uint8_t westDetect;
+uint8_t eastDetect;
+
 SemaphoreHandle_t keyArrayMutex;
 SemaphoreHandle_t queueReceiveMutex;
 SemaphoreHandle_t currentStepSizesMutex;
