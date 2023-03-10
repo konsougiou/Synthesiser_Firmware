@@ -20,6 +20,7 @@ volatile uint8_t localOctave = 4;
 volatile uint32_t currentStepSize = 0;
 
 volatile uint8_t keyArray[7];
+volatile uint8_t chordArray[12] = {0};
 
 // volatile uint8_t TX_Message[8] = {0};
 
@@ -33,6 +34,13 @@ uint8_t TX_Message[8] = {0};
 
 uint8_t westDetect;
 uint8_t eastDetect;
+uint8_t knob3press;
+uint8_t knob2press;
+uint8_t knob1press;
+uint8_t knob0press;
+
+bool chordRecord = false;
+bool chordPlay = false;
 
 SemaphoreHandle_t keyArrayMutex;
 SemaphoreHandle_t queueReceiveMutex;

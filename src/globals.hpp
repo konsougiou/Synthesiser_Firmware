@@ -40,6 +40,14 @@ extern uint8_t knob2Rotation;
 
 extern uint8_t westDetect;
 extern uint8_t eastDetect;
+extern uint8_t knob3press;
+extern uint8_t knob2press;
+extern uint8_t knob1press;
+extern uint8_t knob0press;
+
+extern bool chordRecord;
+extern bool chordPlay;
+extern volatile uint8_t chordArray[12];
 
 extern knob *knob3;
 extern knob *knob2;

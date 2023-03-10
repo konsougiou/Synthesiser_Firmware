@@ -177,6 +177,29 @@ void handshakeTask(void *pvParameters)
   }
 }
 
+// void recordKeysTask(void *pvParameters)
+// {
+
+//   const TickType_t xFrequency = 30 / portTICK_PERIOD_MS;
+//   TickType_t xLastWakeTime = xTaskGetTickCount();
+//   while (1)
+//   {
+
+//     vTaskDelayUntil(&xLastWakeTime, xFrequency);
+
+//     setRow(6);                // Set row address
+//     // digitalWrite(OUT_PIN, 1); // Set value to latch in DFF
+//     // digitalWrite(REN_PIN, 1); // Enable selected row
+//     delayMicroseconds(3);
+//     // Wait for column inputs to stabilise
+//     xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
+//     keyArray[6] = readCols(); // Read column inputs
+//     xSemaphoreGive(keyArrayMutex);
+//     // digitalWrite(REN_PIN, 0);
+//   }
+// }
+
+
 void scanKeysTask(void *pvParameters)
 {
 
@@ -187,6 +210,9 @@ void scanKeysTask(void *pvParameters)
   //uint8_t TX_Message[8] = {0};
   uint32_t ID;
   bool keyPressedPrev = false;
+
+  bool localChordPlay = false;
+  bool localChordRecord = false;
 
   // uint8_t localOctave = 4;
   uint8_t tempLocalOctave = 4;
@@ -210,10 +236,15 @@ void scanKeysTask(void *pvParameters)
 
     xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
 
-    westDetect = ((uint32_t)keyArray[5]); // % 16) >> 3;
-    eastDetect = ((uint32_t)keyArray[6]); // % 16) >> 3;
-
+    westDetect = (((uint32_t)keyArray[5]) % 16) >> 3;
+    eastDetect = (((uint32_t)keyArray[6]) % 16) >> 3;
+    knob3press = (((uint32_t)keyArray[5]) % 4) >> 1;
+    knob2press = (((uint32_t)keyArray[5]) % 2);
+    knob1press = (((uint8_t)keyArray[6]) % 4) >> 1;
+    knob0press = (((uint8_t)keyArray[6]) % 2);
+    
     xSemaphoreGive(keyArrayMutex);
+
 
     for (uint8_t rowIdx = 0; rowIdx < 5; rowIdx++)
     {
@@ -283,17 +314,17 @@ void scanKeysTask(void *pvParameters)
     // Need to set the local octave as well.
     // This would mean that the local step size would also have to be altered accordingly.
     // preferably on-the-fly
-    if ((westDetect == 0x7) && (eastDetect == 0x7)) // Centre
+    if ((!westDetect) && (!eastDetect)) // Centre
     {
       TX_Message[3] = 5;
       tempLocalOctave = 5;
     }
-    else if ((westDetect == 0x7) && (eastDetect == 0xF)) // Right
+    else if ((!westDetect) && (eastDetect)) // Right
     {
       TX_Message[3] = 6;
       tempLocalOctave = 6;
     }
-    else if ((westDetect == 0xF) && (eastDetect == 0x7)) // Left
+    else if ((westDetect) && (!eastDetect)) // Left
     {
       TX_Message[3] = 4;
       tempLocalOctave = 4;
@@ -410,8 +441,12 @@ void displayUpdateTask(void *pvParameters)
     uint32_t byte1 = ((uint32_t)keyArray[0]) << 8;
     uint32_t byte2 = ((uint32_t)keyArray[1]) << 4;
     uint32_t byte3 = (uint32_t)keyArray[2];
-    westDetect = ((uint32_t)keyArray[5]); // % 16) >> 3;
-    eastDetect = ((uint32_t)keyArray[6]); // % 16) >> 3;
+    westDetect = (((uint32_t)keyArray[5]) % 16) >> 3;
+    eastDetect = (((uint32_t)keyArray[6]) % 16) >> 3;
+    knob3press = (((uint32_t)keyArray[5]) % 4) >> 1;
+    knob2press = (((uint32_t)keyArray[5]) % 2);
+    knob1press = (((uint32_t)keyArray[6]) % 4) >> 1;
+    knob0press = (((uint32_t)keyArray[6]) % 2);
 
     xSemaphoreGive(keyArrayMutex);
 
@@ -437,7 +472,6 @@ void displayUpdateTask(void *pvParameters)
 
     xSemaphoreGive(currentStepSizesMutex);
 
-
     u8g2.setCursor(2, 20);
     u8g2.println(tempRX_Message[0], BIN);
     u8g2.setCursor(2, 20);
@@ -451,6 +485,10 @@ void displayUpdateTask(void *pvParameters)
     u8g2.setCursor(95, 30);
     uint8_t tmpKnob2Rotation = __atomic_load_n(&knob2Rotation, __ATOMIC_RELAXED);
     u8g2.println(tmpKnob2Rotation, DEC);
+
+    u8g2.setCursor(2, 30);
+    uint8_t tmpknob0 = __atomic_load_n(&knob0press, __ATOMIC_RELAXED);
+    u8g2.println(tmpknob0, BIN);
 
     while (CAN_CheckRXLevel())
       CAN_RX(ID, RX_Message);
@@ -467,15 +505,15 @@ void displayUpdateTask(void *pvParameters)
     u8g2.print(tempRX_Message[3], HEX); // Displays the octave
 
     u8g2.setCursor(40, 20);
-    if ((westDetect == 0x7) && (eastDetect == 0x7))
+    if ((!westDetect) && (!eastDetect))
     {
       u8g2.drawStr(80, 20, "Centre");
     }
-    else if ((westDetect == 0x7) && (eastDetect == 0xF))
+    else if ((!westDetect) && (eastDetect))
     {
       u8g2.drawStr(80, 20, "Right");
     }
-    else if ((westDetect == 0xF) && (eastDetect == 0x7))
+    else if ((westDetect) && (!eastDetect))
     {
       u8g2.drawStr(80, 20, "Left");
     }
@@ -644,6 +682,15 @@ void setup()
       2,            /* Task priority */
       &scanKeysHandle);
 
+  // TaskHandle_t recordKeysHandle = NULL;
+  // xTaskCreate(
+  //     recordKeysTask, /* Function that implements the task */
+  //     "recordKeys",   /* Text name for the task */
+  //     64,           /* Stack size in words, not bytes */
+  //     NULL,         /* Parameter passed into the task */
+  //     2,            /* Task priority */
+  //     &recordKeysHandle);
+
   TaskHandle_t displayUpdateHandle = NULL;
   xTaskCreate(
       displayUpdateTask, /* Function that implements the task */
@@ -674,7 +721,7 @@ void setup()
   TaskHandle_t handshakeTaskHandle = NULL;
   xTaskCreate(
       handshakeTask,   /* Function that implements the task */
-      "decodeMessage", /* Text name for the task */
+      "handshakeTask", /* Text name for the task */
       256,             /* Stack size in words, not bytes */
       NULL,            /* Parameter passed into the task */
       1,               /* Task priority */
