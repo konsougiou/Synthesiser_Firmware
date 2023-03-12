@@ -9,6 +9,7 @@ extern const double frequency_ratio;
 extern const uint32_t step_scaling;
 
 extern const uint32_t stepSizes[];
+extern volatile uint32_t freqs[];
 
 extern volatile uint8_t localOctave;
 
@@ -36,10 +37,16 @@ extern uint8_t TX_Message[8];
 
 extern uint8_t knob3Rotation;
 extern uint8_t knob3State;
+extern uint8_t knob2Rotation;
 
 extern uint8_t westDetect;
 extern uint8_t eastDetect;
 
 extern uint8_t reverb;
 
+extern uint32_t decayCounters[36];
+extern uint32_t internalCounters[36];
+
 extern knob *knob3;
+extern knob *knob2;
+extern knob *knob1;

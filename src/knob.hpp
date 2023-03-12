@@ -17,4 +17,5 @@ class knob{
         uint8_t upperLimit;
         uint8_t lowerLimit;
         uint8_t knobState;
+        uint8_t keyArrayIdx;
 };

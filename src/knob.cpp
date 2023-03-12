@@ -8,22 +8,23 @@ knob::knob(uint8_t number):  knobNumber(number){
     upperLimit = 8;
     lowerLimit = 0;
     knobState = 0;
+    keyArrayIdx = 4 - (number / 2);
 }
  
 void knob::updateRotation(uint8_t& knobRotation){
   xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
 
-  uint8_t knobCols = keyArray[3];
+  uint8_t knobCols = keyArray[keyArrayIdx];
   
   xSemaphoreGive(keyArrayMutex);  
 
   uint8_t lastTransition = 0;
   uint8_t localKnobRotation = __atomic_load_n(&knobRotation, __ATOMIC_RELAXED);
   
-  uint8_t knob3B = ((knobCols) % 4) >> 1;
-  uint8_t knob3A = knobCols % 2;
+  uint8_t knobB = (knobNumber % 2) ? (knobCols % 4) >> 1 : (knobCols % 16) >> 3;
+  uint8_t knobA = (knobNumber % 2) ? (knobCols % 2) : (knobCols % 8) >> 2;
 
-  uint8_t newKnobState = (knob3B << 1) + knob3A;
+  uint8_t newKnobState = (knobB << 1) + knobA;
 
   if (newKnobState == knobState + 1){
     if (newKnobState == 3){

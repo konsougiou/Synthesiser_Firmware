@@ -7,6 +7,32 @@
 
 #include "globals.hpp"
 
+
+/*
+CAN Format [8 bytes]  For key press:
+0: First 4 keys
+1: Second 4 keys
+2: Last 4 keys
+3: Octave
+4: KeyChange (Boolean Value)
+5: 
+6: 
+7: 
+*/
+
+
+/*
+CAN Format [8 bytes]  For knob change:
+0: 
+1: Reverb
+2: Knob2Rotation (Pitch)
+3:
+4: KeyChange (Boolean Value)
+5: 
+6: 
+7: 
+*/
+
 // Pin definitions
 // Row select and enable
 const int RA0_PIN = D3;
@@ -67,14 +93,12 @@ void sampleISR()
 
   static uint32_t phaseAccArray[36] = {0};
   static uint32_t Vouts[36] = {0};
-  static uint32_t decayCounters[36] = {0};
-  static uint32_t internalCounters[36] = {0};
   int32_t totalVout = 0;
   int32_t Vout;
   for(int z=0;z<36;z++){
     Vout = 0;
     if(currentStepSizes[z]==0){
-      if(prevStepSizes[z] != 0 && reverb){
+      if(prevStepSizes[z] != 0){
         if (decayCounters[z] == 22000){
           decayCounters[z] = 0; 
           prevStepSizes[z] = 0;
@@ -84,7 +108,7 @@ void sampleISR()
 
         decayCounters[z] += 1; 
 
-        if (decayCounters[z] % (2750 / reverb) == 0){
+        if (decayCounters[z] % (2750 * reverb) == 0){
           internalCounters[z] += 1;
         } 
        phaseAccArray[z] += prevStepSizes[z]; 
@@ -194,6 +218,50 @@ void handshakeTask(void *pvParameters)
   }
 }
 
+void knobUpdateTask(void *pvParameters){
+  const TickType_t xFrequency = 50 / portTICK_PERIOD_MS;
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+
+  uint8_t localReverb;
+  uint8_t prevReverb;
+
+  uint8_t localKnob2Rotation;
+  uint8_t prevKnob2Rotation;
+
+  while (1)
+  {
+    vTaskDelayUntil(&xLastWakeTime, xFrequency);
+
+    // For reverb knob
+    xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
+
+    westDetect = (((uint32_t)keyArray[5]) % 16) >> 3;
+    eastDetect = (((uint32_t)keyArray[6]) % 16) >> 3;
+
+    xSemaphoreGive(keyArrayMutex);
+    
+    // Indicating a knob change message
+    TX_Message[4] = 1;
+    
+    // Sets the TX message field to store the reverb that was set locally
+    localReverb = __atomic_load_n(&reverb, __ATOMIC_RELAXED); 
+    TX_Message[1] = localReverb;
+
+    // Sets the TX message field to store the pitch that was set locally
+    localKnob2Rotation = __atomic_load_n(&knob2Rotation, __ATOMIC_RELAXED); 
+    TX_Message[2] = localKnob2Rotation;
+
+    if ((localKnob2Rotation != prevKnob2Rotation || localReverb != prevReverb) && !(westDetect == 1 && eastDetect == 1))
+    {
+      xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
+    } 
+
+    prevReverb = localReverb;
+    prevKnob2Rotation = localKnob2Rotation;
+  }
+  
+}
+
 void scanKeysTask(void *pvParameters)
 {
 
@@ -208,6 +276,11 @@ void scanKeysTask(void *pvParameters)
   // uint8_t localOctave = 4;
   uint8_t tempLocalOctave = 4;
 
+  // uint8_t localReverb;
+  // uint8_t prevReverb;
+
+  // uint8_t localKnob2Rotation;
+  // uint8_t prevKnob2Rotation;
 
   uint32_t localCurrentStepSizes[12] = {0};
 
@@ -225,8 +298,9 @@ void scanKeysTask(void *pvParameters)
 
     xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
 
-    westDetect = ((uint32_t)keyArray[5]); // % 16) >> 3;
-    eastDetect = ((uint32_t)keyArray[6]); // % 16) >> 3;
+    westDetect = (((uint32_t)keyArray[5]) % 16) >> 3;
+    eastDetect = (((uint32_t)keyArray[6]) % 16) >> 3;
+    
 
     xSemaphoreGive(keyArrayMutex);
 
@@ -245,7 +319,16 @@ void scanKeysTask(void *pvParameters)
 
     xSemaphoreGive(keyArrayMutex);
 
+    uint8_t localKnob2Rotation = __atomic_load_n(&knob2Rotation, __ATOMIC_RELAXED);
+    
+    uint8_t localReverb = __atomic_load_n(&reverb, __ATOMIC_RELAXED);
+
     uint32_t tmpCurrentStepSize = 0;
+    uint32_t stepScaling = freqs[knob2Rotation];
+
+    // uint32_t stepScaling = (pow(2, 32) / freqs[knob2Rotation]);
+
+
     // extracting the step size
     // TX_Message[3] = ((HAL_GetUIDw0() + HAL_GetUIDw1() + HAL_GetUIDw2()) && 0xFF);
     // TX_Message[3] = (0x85ebca6b*((HAL_GetUIDw0() ^ HAL_GetUIDw1() ^ HAL_GetUIDw2()) ^ ((HAL_GetUIDw0() ^ HAL_GetUIDw1() ^ HAL_GetUIDw2())>>16)))& 0xFF;
@@ -266,48 +349,47 @@ void scanKeysTask(void *pvParameters)
       uint8_t key1 = (keyGroup % 2);
       uint8_t keyOffset = i * 4;
       TX_Message[i] = 0;
+      TX_Message[4] = 0; // Indicating it is a key change message
       if (!key1)
       {
-        localCurrentStepSizes[keyOffset] = stepSizes[keyOffset] << (localOctave - 4);
+        localCurrentStepSizes[keyOffset] = stepSizes[keyOffset] << (localOctave - 4 + localKnob2Rotation);
         key_pressed = true;
         TX_Message[i] += 1;
       }
       if (!key2)
       {
-        localCurrentStepSizes[keyOffset + 1] = stepSizes[keyOffset + 1] << (localOctave - 4);
+        localCurrentStepSizes[keyOffset + 1] = stepSizes[keyOffset + 1] << (localOctave - 4 + localKnob2Rotation);
         key_pressed = true;
         TX_Message[i] += 2;
       }
       if (!key3)
       {
-        localCurrentStepSizes[keyOffset + 2] = stepSizes[keyOffset + 2] << (localOctave - 4);
+        localCurrentStepSizes[keyOffset + 2] = stepSizes[keyOffset + 2] << (localOctave - 4 + localKnob2Rotation);
         key_pressed = true;
         TX_Message[i] += 4;
       }
       if (!key4)
       {
-        localCurrentStepSizes[keyOffset + 3] = stepSizes[keyOffset + 3] << (localOctave - 4);
+        localCurrentStepSizes[keyOffset + 3] = stepSizes[keyOffset + 3] << (localOctave - 4 + localKnob2Rotation);
         key_pressed = true;
         TX_Message[i] += 8;
       }
     };
 
-    // TX_Message[1] = 4;
-
     // Need to set the local octave as well.
     // This would mean that the local step size would also have to be altered accordingly.
     // preferably on-the-fly
-    if ((westDetect == 0x7) && (eastDetect == 0x7)) // Centre
+    if ((westDetect == 0) && (eastDetect == 0)) // Centre
     {
       TX_Message[3] = 5;
       tempLocalOctave = 5;
     }
-    else if ((westDetect == 0x7) && (eastDetect == 0xF)) // Right
+    else if ((westDetect == 0) && (eastDetect == 1)) // Right
     {
       TX_Message[3] = 5;
       tempLocalOctave = 5;
     }
-    else if ((westDetect == 0xF) && (eastDetect == 0x7)) // Left
+    else if ((westDetect == 1) && (eastDetect == 0)) // Left
     {
       TX_Message[3] = 4;
       tempLocalOctave = 4;
@@ -327,7 +409,9 @@ void scanKeysTask(void *pvParameters)
       for (uint8_t i = 0; i < 12; i++){ 
         currentStepSizes[i] = localCurrentStepSizes[i];
         if (localCurrentStepSizes[i] != 0){
-        prevStepSizes[i] = localCurrentStepSizes[i]; 
+        prevStepSizes[i] = localReverb ? localCurrentStepSizes[i] : 0; 
+        decayCounters[i] = 0; 
+        internalCounters[i] = 0;
         }
       } 
     }
@@ -336,25 +420,40 @@ void scanKeysTask(void *pvParameters)
         uint8_t idx = (12*(tempLocalOctave - 4)) + i;
         currentStepSizes[idx] = localCurrentStepSizes[i]; 
         if (localCurrentStepSizes[i] != 0){
-        prevStepSizes[idx] = localCurrentStepSizes[i]; 
+        prevStepSizes[idx] = localReverb ? localCurrentStepSizes[i] : 0;  
+        decayCounters[i] = 0; 
+        internalCounters[i] = 0;
       }
       }
     }
 
     xSemaphoreGive(currentStepSizesMutex);
 
-    
-    if ((key_pressed || (key_pressed != keyPressedPrev)) && !(westDetect == 15 && eastDetect == 15))
+    // if ((keyChanged || localKnob2Rotation != prevKnob2Rotation || localReverb != prevReverb) && !(westDetect == 1 && eastDetect == 1))
+    if ((key_pressed || (key_pressed != keyPressedPrev)) && !(westDetect == 1 && eastDetect == 1))
     {
       // TX_Message[0] = 80;
       xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
     }
 
+    // __atomic_store_n(&localReverb, reverb, __ATOMIC_RELAXED);
+    // TX_Message[5] = localReverb;
+    // if (localReverb != prevReverb){
+    //  // xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
+    // }
 
     keyPressedPrev = key_pressed;
-    knob3->setLimits(8, 0);
 
+    
+    // For volume knob
     knob3->updateRotation(knob3Rotation);
+ 
+    // For reverb knob
+    knob1->updateRotation(reverb);
+    
+    // For pitch knob
+    knob2->updateRotation(knob2Rotation); 
+
   }
 }
 void displayUpdateTask(void *pvParameters)
@@ -376,8 +475,8 @@ void displayUpdateTask(void *pvParameters)
     uint32_t byte1 = ((uint32_t)keyArray[0]) << 8;
     uint32_t byte2 = ((uint32_t)keyArray[1]) << 4;
     uint32_t byte3 = (uint32_t)keyArray[2];
-    westDetect = ((uint32_t)keyArray[5]); // % 16) >> 3;
-    eastDetect = ((uint32_t)keyArray[6]); // % 16) >> 3;
+    westDetect = (((uint32_t)keyArray[5]) % 16) >> 3;
+    eastDetect = (((uint32_t)keyArray[6]) % 16) >> 3;
 
     xSemaphoreGive(keyArrayMutex);
 
@@ -420,6 +519,14 @@ void displayUpdateTask(void *pvParameters)
     uint8_t tmpKnob3Rotation = __atomic_load_n(&knob3Rotation, __ATOMIC_RELAXED);
     u8g2.println(tmpKnob3Rotation ,HEX);
 
+    u8g2.setCursor(92, 30);
+    uint8_t tmpReverb = __atomic_load_n(&reverb, __ATOMIC_RELAXED);
+    u8g2.println(tmpReverb ,HEX);
+
+    u8g2.setCursor(102, 30);
+    uint8_t tmpKnob2Rotation = __atomic_load_n(&knob2Rotation, __ATOMIC_RELAXED);
+    u8g2.println(tmpKnob2Rotation, DEC);
+
     while (CAN_CheckRXLevel())
       CAN_RX(ID, RX_Message);
 
@@ -435,21 +542,22 @@ void displayUpdateTask(void *pvParameters)
     //u8g2.print(tempRX_Message[3], HEX); // Displays the octave
 
     u8g2.setCursor(40, 20);
-    if ((westDetect == 0x7) && (eastDetect == 0x7))
+    if ((westDetect == 0) && (eastDetect == 0))
     {
       u8g2.drawStr(80, 20, "Centre");
     }
-    else if ((westDetect == 0x7) && (eastDetect == 0xF))
+    else if ((westDetect == 0) && (eastDetect == 1))
     {
       u8g2.drawStr(80, 20, "Right");
     }
-    else if ((westDetect == 0xF) && (eastDetect == 0x7))
+    else if ((westDetect == 1) && (eastDetect == 0))
     {
       u8g2.drawStr(80, 20, "Left");
     }
     else
     {
-      u8g2.print(eastDetect, DEC);
+      // u8g2.print(eastDetect, DEC);
+      u8g2.drawStr(80, 20, "-_-");
     }
 
   //  u8g2.setCursor(86, 30);
@@ -464,10 +572,13 @@ void displayUpdateTask(void *pvParameters)
 
 void decodeTask(void *pvParameters)
 {
-  const TickType_t xFrequency = 80 / portTICK_PERIOD_MS;
+  const TickType_t xFrequency = 25 / portTICK_PERIOD_MS;
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
+  uint8_t tempReverb;
+  uint8_t tempKnob2Rotation;
   uint8_t tempRX_Message[8] = {0};
+  uint8_t localKnob2Rotation;
   //uint8_t localCurrentStepSizes[12] = {0};
 
   while (1)
@@ -478,11 +589,15 @@ void decodeTask(void *pvParameters)
 
     uint32_t localCurrentStepSizes[12] = {0};
 
+    uint8_t localReverb;
+
     xSemaphoreTake(queueReceiveMutex, portMAX_DELAY);
 
     std::copy(std::begin(tempRX_Message), std::end(tempRX_Message), std::begin(RX_Message));
 
     xSemaphoreGive(queueReceiveMutex);
+    
+    localKnob2Rotation = __atomic_load_n(&knob2Rotation, __ATOMIC_RELAXED); 
 
     // xSemaphoreTake(decodeStepSizesMutex, portMAX_DELAY);
 
@@ -503,7 +618,12 @@ void decodeTask(void *pvParameters)
     //       __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
     //     }
     //   }
-    if (!(westDetect == 15 && eastDetect == 15)){
+
+    // tempReverb = RX_Message[5];
+    // __atomic_store_n(&reverb, tempReverb, __ATOMIC_RELAXED);
+
+    if (!(westDetect == 1 && eastDetect == 1)){
+      if (RX_Message[4] == 0){
       uint32_t RX_Octave = RX_Message[3];
       for(int i = 0; i < 3; i++){
         uint32_t keyGroup = RX_Message[i];
@@ -514,38 +634,53 @@ void decodeTask(void *pvParameters)
         uint8_t keyOffset = i * 4;
         if (key1)
         {
-          localCurrentStepSizes[keyOffset] = stepSizes[keyOffset] << (RX_Octave - 4);
+          localCurrentStepSizes[keyOffset] = stepSizes[keyOffset] << (RX_Octave - 4 + localKnob2Rotation);
         }
         if (key2)
         {
-          localCurrentStepSizes[keyOffset + 1] = stepSizes[keyOffset + 1] << (RX_Octave - 4);
+          localCurrentStepSizes[keyOffset + 1] = stepSizes[keyOffset + 1] << (RX_Octave - 4 + localKnob2Rotation);
         }
         if (key3)
         {
-          localCurrentStepSizes[keyOffset + 2] = stepSizes[keyOffset + 2] << (RX_Octave - 4);
+          localCurrentStepSizes[keyOffset + 2] = stepSizes[keyOffset + 2] << (RX_Octave - 4 + localKnob2Rotation);
         }
         if (key4)
         {
-          localCurrentStepSizes[keyOffset + 3] = stepSizes[keyOffset + 3] << (RX_Octave - 4);
+          localCurrentStepSizes[keyOffset + 3] = stepSizes[keyOffset + 3] << (RX_Octave - 4 + localKnob2Rotation);
         }
       }
-      
+        localReverb = __atomic_load_n(&reverb, __ATOMIC_RELAXED);
+
         xSemaphoreTake(currentStepSizesMutex, portMAX_DELAY);
 
         //std::copy(std::begin(localCurrentStepSizes), std::end(localCurrentStepSizes), std::begin(currentStepSizes) + (12 *(RX_Octave - 4)));
         // for (int i = 0; i < 12; i++){
         //   currentStepSizes[12*(RX_Octave - 4) + i] = localCurrentStepSizes[i]; 
         // }
-
+        
         for (uint8_t i = 0; i < 12; i++){ 
             uint8_t idx = (12*(RX_Octave - 4)) + i;
             currentStepSizes[idx] = localCurrentStepSizes[i]; 
             if (localCurrentStepSizes[i] != 0){
-            prevStepSizes[idx] = localCurrentStepSizes[i]; 
+            prevStepSizes[idx] = localReverb ? localCurrentStepSizes[i] : 0;
+            decayCounters[i] = 0; 
+            internalCounters[i] = 0;
           }
         }
-        xSemaphoreGive(currentStepSizesMutex);
+        
+      xSemaphoreGive(currentStepSizesMutex);
+      }
+      else{
+      tempReverb = RX_Message[1];
+      __atomic_store_n(&reverb, tempReverb, __ATOMIC_RELAXED);
+
+      tempKnob2Rotation = RX_Message[2];
+      __atomic_store_n(&knob2Rotation, tempKnob2Rotation, __ATOMIC_RELAXED);
+
+      }
+      
     }
+
    } 
 }
 
@@ -566,6 +701,10 @@ void setup()
 
   msgInQ = xQueueCreate(36, 8);
   msgOutQ = xQueueCreate(36, 8);
+  
+  knob3->setLimits(8, 0);
+  knob2->setLimits(3, 0);
+  knob1->setLimits(2, 0);
 
   // Set pin directions
   pinMode(RA0_PIN, OUTPUT);
@@ -602,7 +741,7 @@ void setup()
   xTaskCreate(
       scanKeysTask, /* Function that implements the task */
       "scanKeys",   /* Text name for the task */
-      64,           /* Stack size in words, not bytes */
+      256,           /* Stack size in words, not bytes */
       NULL,         /* Parameter passed into the task */
       2,            /* Task priority */
       &scanKeysHandle);
@@ -622,7 +761,7 @@ void setup()
       "decodeMessage", /* Text name for the task */
       256,             /* Stack size in words, not bytes */
       NULL,            /* Parameter passed into the task */
-      1,               /* Task priority */
+      2,               /* Task priority */
       &decodeTaskHandle);
 
   TaskHandle_t CAN_TX_TaskHandle = NULL;
@@ -641,7 +780,16 @@ void setup()
       256,             /* Stack size in words, not bytes */
       NULL,            /* Parameter passed into the task */
       1,               /* Task priority */
-      &decodeTaskHandle);
+      &handshakeTaskHandle);
+
+  TaskHandle_t knobUpdateTaskHandle = NULL;
+  xTaskCreate(
+      knobUpdateTask,   /* Function that implements the task */
+      "knobUpdate", /* Text name for the task */
+      128,             /* Stack size in words, not bytes */
+      NULL,            /* Parameter passed into the task */
+      1,               /* Task priority */
+      &knobUpdateTaskHandle);
     
 
   // Create the mutex and assign its handle in the setup function
@@ -651,6 +799,10 @@ void setup()
   decodeStepSizesMutex = xSemaphoreCreateMutex();
 
   CAN_TX_Semaphore = xSemaphoreCreateCounting(3, 3);
+
+  knob3->setLimits(8, 0);
+  knob1->setLimits(2, 0);
+  knob2->setLimits(3, 0);
 
   CAN_Init(false);
   setCANFilter(0x123, 0x7ff);
