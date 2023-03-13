@@ -1,8 +1,16 @@
 #include <Arduino.h>
 #include <U8g2lib.h>
 #include <STM32FreeRTOS.h>
+#include <math.h>
+#include <numeric>
+#include <STM32FreeRTOS.h>
+#include <ES_CAN.h>
+
 
 #include "knob.hpp"
+#include "tasks/tasks.hpp"
+#include "ISRs/ISRs.hpp"
+#include "utils/utils.hpp"
 
 extern const uint32_t interval; // Display update interval
 extern const double frequency_ratio;
@@ -50,3 +58,34 @@ extern uint32_t internalCounters[36];
 extern knob *knob3;
 extern knob *knob2;
 extern knob *knob1;
+
+// Pin definitions
+// Row select and enable
+extern const int RA0_PIN;
+extern const int RA1_PIN;
+extern const int RA2_PIN;
+extern const int REN_PIN;
+
+// Matrix input and output
+extern const int C0_PIN;
+extern const int C1_PIN;
+extern const int C2_PIN;
+extern const int C3_PIN;
+extern const int OUT_PIN;
+
+// Audio analogue out
+extern const int OUTL_PIN;
+extern const int OUTR_PIN;
+
+// Joystick analogue in
+extern const int JOYY_PIN;
+extern const int JOYX_PIN;
+
+// Output multiplexer bits
+extern const int DEN_BIT;
+extern const int DRST_BIT;
+extern const int HKOW_BIT;
+extern const int HKOE_BIT;
+
+// Display driver object
+extern U8G2_SSD1305_128X32_NONAME_F_HW_I2C u8g2;
