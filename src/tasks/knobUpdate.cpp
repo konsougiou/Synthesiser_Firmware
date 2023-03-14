@@ -1,4 +1,5 @@
 
+#include "tasks.hpp"
 #include "../globals.hpp"
 
 void knobUpdateTask(void *pvParameters){

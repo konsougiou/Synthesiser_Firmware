@@ -1,5 +1,7 @@
 
+#include "tasks.hpp"
 #include "../globals.hpp"
+#include "../utils/utils.hpp"
 
 void handshakeTask(void *pvParameters)
 {

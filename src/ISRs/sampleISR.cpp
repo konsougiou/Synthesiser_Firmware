@@ -1,4 +1,5 @@
 
+#include "ISRs.hpp"
 #include "../globals.hpp"
 
 void sampleISR()
@@ -10,7 +11,7 @@ void sampleISR()
   for(int z=0;z<36;z++){
     Vout = 0;
     if(currentStepSizes[z]==0){
-      if(prevStepSizes[z] != 0){
+      if(prevStepSizes[z] != 0 && reverb){
         if (decayCounters[z] == 22000){
           decayCounters[z] = 0; 
           prevStepSizes[z] = 0;
@@ -24,7 +25,7 @@ void sampleISR()
           internalCounters[z] += 1;
         } 
        phaseAccArray[z] += prevStepSizes[z]; 
-       Vout = (phaseAccArray[z] >> 24) >> internalCounters[z];
+       Vout = (phaseAccArray[z] >> 25) >> internalCounters[z];
       } 
       else{
       phaseAccArray[z]= 0;

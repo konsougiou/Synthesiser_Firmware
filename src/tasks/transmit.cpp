@@ -1,5 +1,11 @@
 
+#include "tasks.hpp"
 #include "../globals.hpp"
+#include "../utils/utils.hpp"
+
+extern knob *knob3;
+extern knob *knob2;
+extern knob *knob1;
 
 void transmitTask(void *pvParameters)
 {

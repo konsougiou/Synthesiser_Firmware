@@ -1,6 +1,9 @@
 
 #include "globals.hpp"
-
+#include "tasks/tasks.hpp"
+#include "ISRs/ISRs.hpp"
+#include "utils/utils.hpp"
+//#include "knob.hpp"
 
 /*
 CAN Format [8 bytes] (For key press):

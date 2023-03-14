@@ -6,11 +6,7 @@
 #include <STM32FreeRTOS.h>
 #include <ES_CAN.h>
 
-
 #include "knob.hpp"
-#include "tasks/tasks.hpp"
-#include "ISRs/ISRs.hpp"
-#include "utils/utils.hpp"
 
 extern const uint32_t interval; // Display update interval
 extern const double frequency_ratio;
