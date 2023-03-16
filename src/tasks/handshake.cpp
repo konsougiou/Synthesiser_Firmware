@@ -8,10 +8,12 @@ void handshakeTask(void *pvParameters)
 
   const TickType_t xFrequency = 30 / portTICK_PERIOD_MS;
   TickType_t xLastWakeTime = xTaskGetTickCount();
-  while (1)
+  uint8_t ran = 1;
+
+  while (ran==1)
   {
 
-    vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    // vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
     setRow(5);                                    // Set row address
     digitalWrite(OUT_PIN, 1);                     // Set value to latch in DFF
@@ -32,5 +34,7 @@ void handshakeTask(void *pvParameters)
     keyArray[6] = readCols();                     // Read column inputs
     xSemaphoreGive(keyArrayMutex);
     digitalWrite(REN_PIN, 0);
+
+    ran = 2;
   }
 }

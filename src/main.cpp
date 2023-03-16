@@ -32,10 +32,11 @@ CAN Format [8 bytes]  (For knob change):
 
 void setup()
 {
+  Serial.begin(9600);
   // Following code is run once:
 
   msgInQ = xQueueCreate(36, 8);
-  msgOutQ = xQueueCreate(36, 8);
+  msgOutQ = xQueueCreate(128, 8);
   
   knob3->setLimits(8, 0);
   knob2->setLimits(3, 0);
@@ -70,14 +71,18 @@ void setup()
   //HardwareTimer *sampleTimer = new HardwareTimer(Instance);
 
   // Initialise UART
+  
+  #ifndef DISABLE_ISR_ATTACH
   sampleTimer->setOverflow(22000, HERTZ_FORMAT);
   sampleTimer->attachInterrupt(sampleISR);
   sampleTimer->resume();
 
+  
   sinewaveSampleTimer->setOverflow(5000, HERTZ_FORMAT);
   sinewaveSampleTimer->attachInterrupt(sinewaveISR);
+  #endif
 
-
+  #ifndef DISABLE_THREADS
   TaskHandle_t transmitHandle = NULL;
   xTaskCreate(
       transmitTask,       /* Function that implements the task */
@@ -122,7 +127,7 @@ void setup()
       NULL,               /* Parameter passed into the task */
       1,                  /* Task priority */
       &handshakeTaskHandle);
-
+  
   TaskHandle_t knobUpdateTaskHandle = NULL;
   xTaskCreate(
       knobUpdateTask,     /* Function that implements the task */
@@ -140,6 +145,9 @@ void setup()
       NULL,               /* Parameter passed into the task */
       1,                  /* Task priority */
       &modeSwitchTaskHandle);
+  #endif
+
+  
     
   // Create the mutex for each semaphore that will be used and assign its handle in the setup function
   keyArrayMutex = xSemaphoreCreateMutex();
@@ -159,7 +167,17 @@ void setup()
   CAN_RegisterTX_ISR(CAN_TX_ISR);
   CAN_Start();
 
-  vTaskStartScheduler();
+
+
+  // vTaskStartScheduler();
+	uint32_t startTime = micros();
+	for (int iter = 0; iter < 32; iter++) {
+		sampleISR();
+	}
+	Serial.println(micros()-startTime);
+	while(1);
+
+
 }
 
 void loop()

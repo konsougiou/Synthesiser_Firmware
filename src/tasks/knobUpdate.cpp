@@ -14,10 +14,11 @@ void knobUpdateTask(void *pvParameters){
 
   uint8_t localMode;
   uint8_t prevMode;
+  uint8_t ran = 1;
 
-  while (1)
+  while (ran==1)
   {
-    vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    // vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
     // For reverb knob
     xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
@@ -49,6 +50,6 @@ void knobUpdateTask(void *pvParameters){
     prevReverb = localReverb;
     prevKnob2Rotation = localKnob2Rotation;
     prevMode = localMode;
+    ran=2;
   }
-  
 }
