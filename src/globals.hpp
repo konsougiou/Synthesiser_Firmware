@@ -9,10 +9,13 @@
 #include "knob.hpp"
 
 extern TIM_TypeDef *Instanc1;
-extern HardwareTimer *sampleTimer;
+extern HardwareTimer *sawtoothwaveSampleTimer;
 
 extern TIM_TypeDef *Instance2;
 extern HardwareTimer *sinewaveSampleTimer;
+
+extern TIM_TypeDef *Instance3;
+extern HardwareTimer *trianglewaveSampleTimer;
 
 extern const uint32_t interval; // Display update interval
 extern const double frequency_ratio;

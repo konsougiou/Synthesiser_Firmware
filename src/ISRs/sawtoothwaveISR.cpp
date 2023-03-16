@@ -2,7 +2,7 @@
 #include "ISRs.hpp"
 #include "../globals.hpp"
 
-void sampleISR()
+void sawtoothwaveISR()
 {
   static uint32_t phaseAccArray[36] = {0};
   static uint32_t Vouts[36] = {0};
@@ -44,8 +44,6 @@ void sampleISR()
   if (knob3Rotation == 0){
     totalVout = 0;
   }
-  
-
   
   analogWrite(OUTR_PIN, totalVout);
 }

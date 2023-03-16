@@ -40,7 +40,7 @@ void setup()
   knob3->setLimits(8, 0);
   knob2->setLimits(3, 0);
   knob1->setLimits(2, 0);
-  knob0->setLimits(1,0);
+  knob0->setLimits(2,0);
 
   // Set pin directions
   pinMode(RA0_PIN, OUTPUT);
@@ -70,9 +70,12 @@ void setup()
   //HardwareTimer *sampleTimer = new HardwareTimer(Instance);
 
   // Initialise UART
-  sampleTimer->setOverflow(22000, HERTZ_FORMAT);
-  sampleTimer->attachInterrupt(sampleISR);
-  sampleTimer->resume();
+  sawtoothwaveSampleTimer->setOverflow(22000, HERTZ_FORMAT);
+  sawtoothwaveSampleTimer->attachInterrupt(sawtoothwaveISR);
+  sawtoothwaveSampleTimer->resume();
+
+  trianglewaveSampleTimer->setOverflow(10000, HERTZ_FORMAT);
+  trianglewaveSampleTimer->attachInterrupt(trianglewavev2ISR);
 
   sinewaveSampleTimer->setOverflow(5000, HERTZ_FORMAT);
   sinewaveSampleTimer->attachInterrupt(sinewaveISR);
@@ -149,9 +152,10 @@ void setup()
 
   CAN_TX_Semaphore = xSemaphoreCreateCounting(3, 3);
 
-  knob3->setLimits(8, 0);
-  knob1->setLimits(2, 0);
-  knob2->setLimits(3, 0);
+//   knob3->setLimits(8, 0);
+//   knob0->setLimits(2, 0);
+//   knob1->setLimits(2, 0);
+//   knob2->setLimits(3, 0);
 
   CAN_Init(false);
   setCANFilter(0x123, 0x7ff);

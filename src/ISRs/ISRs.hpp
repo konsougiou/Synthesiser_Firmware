@@ -5,6 +5,8 @@ void CAN_TX_ISR(void);
 
 void CAN_RX_ISR(void);
 
-void sampleISR();
+void sawtoothwaveISR();
+
+void trianglewavev2ISR();
 
 void sinewaveISR();
