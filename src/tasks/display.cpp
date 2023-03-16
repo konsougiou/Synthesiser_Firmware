@@ -109,6 +109,9 @@ void displayUpdateTask(void *pvParameters)
       u8g2.drawStr(112, 10, "-_-");
     }
 
+    // u8g2.setFont(u8g2_font_4x6_mr);
+    // u8g2.drawStr(12, 6, "SNSRYOVRLD");
+
     // transfer internal memory to the display
     u8g2.sendBuffer();
 
