@@ -12,6 +12,9 @@ void knobUpdateTask(void *pvParameters){
   uint8_t localKnob2Rotation;
   uint8_t prevKnob2Rotation;
 
+  uint8_t localMode;
+  uint8_t prevMode;
+
   while (1)
   {
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
@@ -25,7 +28,7 @@ void knobUpdateTask(void *pvParameters){
     xSemaphoreGive(keyArrayMutex);
     
     // Indicating a knob change message
-    TX_Message[4] = 1;
+    TX_Message[0] = 1;
     
     // Sets the TX message field to store the reverb that was set locally
     localReverb = __atomic_load_n(&reverb, __ATOMIC_RELAXED); 
@@ -35,13 +38,17 @@ void knobUpdateTask(void *pvParameters){
     localKnob2Rotation = __atomic_load_n(&knob2Rotation, __ATOMIC_RELAXED); 
     TX_Message[2] = localKnob2Rotation;
 
-    if ((localKnob2Rotation != prevKnob2Rotation || localReverb != prevReverb) && !(westDetect == 1 && eastDetect == 1))
+    localMode = __atomic_load_n(&mode, __ATOMIC_RELAXED); 
+    TX_Message[3] = localMode;
+
+    if ((localKnob2Rotation != prevKnob2Rotation || localReverb != prevReverb || localMode != prevMode) && !(westDetect == 1 && eastDetect == 1))
     {
       xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
     } 
 
     prevReverb = localReverb;
     prevKnob2Rotation = localKnob2Rotation;
+    prevMode = localMode;
   }
   
 }

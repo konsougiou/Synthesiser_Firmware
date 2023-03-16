@@ -20,6 +20,7 @@ void transmitTask(void *pvParameters)
   uint8_t tempLocalOctave = 4;
 
   uint32_t localCurrentStepSizes[12] = {0};
+  uint32_t prevReverb = 2;
 
   while (1)
   {
@@ -51,12 +52,15 @@ void transmitTask(void *pvParameters)
 
     uint8_t localKnob2Rotation = __atomic_load_n(&knob2Rotation, __ATOMIC_RELAXED);
     uint8_t localReverb = __atomic_load_n(&reverb, __ATOMIC_RELAXED);
+    uint8_t localMode = __atomic_load_n(&mode, __ATOMIC_RELAXED);
+
 
     uint32_t tmpCurrentStepSize = 0;
     uint32_t stepScaling = freqs[knob2Rotation];
     
     bool key_pressed = false;
 
+    TX_Message[0] = 0; // Indicating it is a key change message
     for (int i = 0; i < 3; i++)
     {
 
@@ -70,31 +74,30 @@ void transmitTask(void *pvParameters)
       uint8_t key2 = (keyGroup % 4) >> 1;
       uint8_t key1 = (keyGroup % 2);
       uint8_t keyOffset = i * 4;
-      TX_Message[i] = 0;
-      TX_Message[4] = 0; // Indicating it is a key change message
+      TX_Message[i + 1] = 0;
       if (!key1)
       {
-        localCurrentStepSizes[keyOffset] = stepSizes[keyOffset] << (localOctave - 4 + localKnob2Rotation);
+        localCurrentStepSizes[keyOffset] = localMode ? 1: stepSizes[keyOffset] << (localOctave - 4 + localKnob2Rotation);
         key_pressed = true;
-        TX_Message[i] += 1;
+        TX_Message[i + 1] += 1;
       }
-      if (!key2)
+      if (!key2 )
       {
-        localCurrentStepSizes[keyOffset + 1] = stepSizes[keyOffset + 1] << (localOctave - 4 + localKnob2Rotation);
+        localCurrentStepSizes[keyOffset + 1] = localMode ? 1: stepSizes[keyOffset + 1] << (localOctave - 4 + localKnob2Rotation); 
         key_pressed = true;
-        TX_Message[i] += 2;
+        TX_Message[i + 1] += 2;
       }
       if (!key3)
       {
-        localCurrentStepSizes[keyOffset + 2] = stepSizes[keyOffset + 2] << (localOctave - 4 + localKnob2Rotation);
+        localCurrentStepSizes[keyOffset + 2] = localMode ? 1: stepSizes[keyOffset + 2] << (localOctave - 4 + localKnob2Rotation);  
         key_pressed = true;
-        TX_Message[i] += 4;
+        TX_Message[i + 1] += 4;
       }
       if (!key4)
       {
-        localCurrentStepSizes[keyOffset + 3] = stepSizes[keyOffset + 3] << (localOctave - 4 + localKnob2Rotation);
+        localCurrentStepSizes[keyOffset + 3] = localMode ? 1: stepSizes[keyOffset + 3] << (localOctave - 4 + localKnob2Rotation); 
         key_pressed = true;
-        TX_Message[i] += 8;
+        TX_Message[i + 1] += 8;
       }
     };
 
@@ -102,37 +105,32 @@ void transmitTask(void *pvParameters)
     // altered accordingly, preferably on-the-fly
     if ((westDetect == 0) && (eastDetect == 0)) // Centre
     {
-      TX_Message[3] = 5;
+      TX_Message[4] = 5;
       tempLocalOctave = 5;
     }
     else if ((westDetect == 0) && (eastDetect == 1)) // Right
     {
-      TX_Message[3] = 5;
+      TX_Message[4] = 5;
       tempLocalOctave = 5;
     }
     else if ((westDetect == 1) && (eastDetect == 0)) // Left
     {
-      TX_Message[3] = 4;
+      TX_Message[4] = 4;
       tempLocalOctave = 4;
     }
     else 
     {
-      TX_Message[3] = 4;
+      TX_Message[4] = 4;
       tempLocalOctave = 4;
     }
     __atomic_store_n(&localOctave, tempLocalOctave, __ATOMIC_RELAXED);
     
-    xSemaphoreTake(currentStepSizesMutex, portMAX_DELAY);
+    xSemaphoreTake(stepSizesMutex, portMAX_DELAY);
 
-    if (false)
+    if (localMode)
     {
       for (uint8_t i = 0; i < 12; i++){ 
-        currentStepSizes[i] = localCurrentStepSizes[i];
-        if (localCurrentStepSizes[i] != 0){
-        prevStepSizes[i] = localReverb ? localCurrentStepSizes[i] : 0; 
-        decayCounters[i] = 0; 
-        internalCounters[i] = 0;
-        }
+        currentStepSizes[i] = localCurrentStepSizes[i] != 0;
       } 
     }
     else{
@@ -147,7 +145,7 @@ void transmitTask(void *pvParameters)
       }
     }
 
-    xSemaphoreGive(currentStepSizesMutex);
+    xSemaphoreGive(stepSizesMutex);
 
     // if ((keyChanged || localKnob2Rotation != prevKnob2Rotation || localReverb != prevReverb) && !(westDetect == 1 && eastDetect == 1))
     if ((key_pressed || (key_pressed != keyPressedPrev)) && !(westDetect == 1 && eastDetect == 1))
@@ -156,16 +154,21 @@ void transmitTask(void *pvParameters)
       xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
     }
 
-    keyPressedPrev = key_pressed;
-    
-    // For volume knob
-    knob3->updateRotation(knob3Rotation);
+    keyPressedPrev = key_pressed; 
+    prevReverb = reverb;
  
     // For reverb knob
     knob1->updateRotation(reverb);
     
     // For pitch knob
     knob2->updateRotation(knob2Rotation); 
+
+    // For volume knob
+    knob3->updateRotation(knob3Rotation);
+
+    // For mode
+    knob0->updateRotation(mode);
+
 
   }
 }

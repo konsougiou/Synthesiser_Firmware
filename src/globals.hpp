@@ -8,12 +8,27 @@
 
 #include "knob.hpp"
 
+extern TIM_TypeDef *Instanc1;
+extern HardwareTimer *sampleTimer;
+
+extern TIM_TypeDef *Instance2;
+extern HardwareTimer *sinewaveSampleTimer;
+
 extern const uint32_t interval; // Display update interval
 extern const double frequency_ratio;
 extern const uint32_t step_scaling;
 
-extern const uint32_t stepSizes[];
+extern const uint32_t stepSizes[12];
 extern volatile uint32_t freqs[];
+extern uint32_t note_frequencies[12];
+extern double periods[12];
+
+//------sinewave calculation parameters-------//
+
+extern uint32_t amplifiedSineFunction[40];
+extern uint32_t indexScaling[12];
+
+//--------------------------------------------//
 
 extern volatile uint8_t localOctave;
 
@@ -26,7 +41,7 @@ extern volatile uint8_t keyArray[7];
 
 extern SemaphoreHandle_t keyArrayMutex;
 extern SemaphoreHandle_t queueReceiveMutex;
-extern SemaphoreHandle_t currentStepSizesMutex;
+extern SemaphoreHandle_t stepSizesMutex;
 extern SemaphoreHandle_t decodeStepSizesMutex;
 
 extern SemaphoreHandle_t CAN_TX_Semaphore;
@@ -40,8 +55,8 @@ extern uint8_t RX_Message[8];
 extern uint8_t TX_Message[8];
 
 extern uint8_t knob3Rotation;
-extern uint8_t knob3State;
 extern uint8_t knob2Rotation;
+extern uint8_t mode;
 
 extern uint8_t westDetect;
 extern uint8_t eastDetect;
@@ -54,6 +69,7 @@ extern uint32_t internalCounters[36];
 extern knob *knob3;
 extern knob *knob2;
 extern knob *knob1;
+extern knob *knob0;
 
 // Pin definitions
 // Row select and enable

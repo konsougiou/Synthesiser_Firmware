@@ -34,7 +34,7 @@ void displayUpdateTask(void *pvParameters)
 
     xSemaphoreGive(queueReceiveMutex);
 
-    xSemaphoreTake(currentStepSizesMutex, portMAX_DELAY);
+    xSemaphoreTake(stepSizesMutex, portMAX_DELAY);
 
     u8g2.setCursor(2, 10);
     u8g2.print(currentStepSizes[0], HEX);
@@ -49,19 +49,23 @@ void displayUpdateTask(void *pvParameters)
     u8g2.setCursor(82, 20);
     u8g2.print(prevStepSizes[2], HEX);
 
-    xSemaphoreGive(currentStepSizesMutex);
+    xSemaphoreGive(stepSizesMutex);
 
-   u8g2.setCursor(82, 30);
-    uint8_t tmpKnob3Rotation = __atomic_load_n(&knob3Rotation, __ATOMIC_RELAXED);
-    u8g2.println(tmpKnob3Rotation ,HEX);
+    u8g2.setCursor(72, 30);
+    uint8_t localMode = __atomic_load_n(&mode, __ATOMIC_RELAXED);
+    u8g2.println(localMode, HEX);
+
+    u8g2.setCursor(82, 30);
+    uint8_t localReverb = __atomic_load_n(&reverb, __ATOMIC_RELAXED);
+    u8g2.println(localReverb ,HEX);
 
     u8g2.setCursor(92, 30);
-    uint8_t tmpReverb = __atomic_load_n(&reverb, __ATOMIC_RELAXED);
-    u8g2.println(tmpReverb ,HEX);
+    uint8_t localPitch = __atomic_load_n(&knob2Rotation, __ATOMIC_RELAXED);
+    u8g2.println(localPitch ,HEX);
 
     u8g2.setCursor(102, 30);
-    uint8_t tmpKnob2Rotation = __atomic_load_n(&knob2Rotation, __ATOMIC_RELAXED);
-    u8g2.println(tmpKnob2Rotation, DEC);
+    uint8_t localKnob3Rotation = __atomic_load_n(&knob3Rotation, __ATOMIC_RELAXED);
+    u8g2.println(localKnob3Rotation, DEC);
 
     while (CAN_CheckRXLevel())
       CAN_RX(ID, RX_Message);

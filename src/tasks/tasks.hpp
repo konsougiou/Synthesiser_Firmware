@@ -9,5 +9,6 @@ void knobUpdateTask(void *pvParameters);
 
 void handshakeTask(void *pvParameters);
 
+void modeSwitchTask(void *pvParameters);
 
 

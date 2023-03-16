@@ -7,11 +7,11 @@
 
 /*
 CAN Format [8 bytes] (For key press):
-0: First 4 keys
-1: Second 4 keys
-2: Last 4 keys
-3: Octave
-4: KeyChange (Boolean Value)
+0: KeyChange (Boolean Value)
+1: First 4 keys
+2: Second 4 keys
+3: Last 4 keys
+4: Octave
 5: 
 6: 
 7: 
@@ -20,11 +20,11 @@ CAN Format [8 bytes] (For key press):
 
 /*
 CAN Format [8 bytes]  (For knob change):
-0: 
+0: KeyChange (Boolean Value) 
 1: Reverb
 2: Knob2Rotation (Pitch)
-3:
-4: KeyChange (Boolean Value)
+3: mode 
+4: 
 5: 
 6: 
 7: 
@@ -40,6 +40,7 @@ void setup()
   knob3->setLimits(8, 0);
   knob2->setLimits(3, 0);
   knob1->setLimits(2, 0);
+  knob0->setLimits(1,0);
 
   // Set pin directions
   pinMode(RA0_PIN, OUTPUT);
@@ -65,13 +66,17 @@ void setup()
   u8g2.begin();
   setOutMuxBit(DEN_BIT, HIGH);  // Enable display power supply
 
-  TIM_TypeDef *Instance = TIM1;
-  HardwareTimer *sampleTimer = new HardwareTimer(Instance);
+  //TIM_TypeDef *Instance = TIM1;
+  //HardwareTimer *sampleTimer = new HardwareTimer(Instance);
 
   // Initialise UART
   sampleTimer->setOverflow(22000, HERTZ_FORMAT);
   sampleTimer->attachInterrupt(sampleISR);
   sampleTimer->resume();
+
+  sinewaveSampleTimer->setOverflow(5000, HERTZ_FORMAT);
+  sinewaveSampleTimer->attachInterrupt(sinewaveISR);
+
 
   TaskHandle_t transmitHandle = NULL;
   xTaskCreate(
@@ -126,11 +131,20 @@ void setup()
       NULL,               /* Parameter passed into the task */
       1,                  /* Task priority */
       &knobUpdateTaskHandle);
+
+  TaskHandle_t modeSwitchTaskHandle = NULL;
+  xTaskCreate(
+      modeSwitchTask,     /* Function that implements the task */
+      "switchMode",       /* Text name for the task */
+      128,                /* Stack size in words, not bytes */
+      NULL,               /* Parameter passed into the task */
+      1,                  /* Task priority */
+      &modeSwitchTaskHandle);
     
   // Create the mutex for each semaphore that will be used and assign its handle in the setup function
   keyArrayMutex = xSemaphoreCreateMutex();
   queueReceiveMutex = xSemaphoreCreateMutex();
-  currentStepSizesMutex = xSemaphoreCreateMutex();
+  stepSizesMutex = xSemaphoreCreateMutex();
   decodeStepSizesMutex = xSemaphoreCreateMutex();
 
   CAN_TX_Semaphore = xSemaphoreCreateCounting(3, 3);
