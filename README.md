@@ -30,23 +30,23 @@
 #### Time Performance
 
 ### Handshake Thread
-  This Task checks the keyArray to see whether there has been a detection of a keyboard to the right or the left. Based on this information, each keyboard knows whether it is in the middle, left or right on the keyboard and can infer its respective octave as well. 
 #### Technical Overview
+This Task checks the keyArray to see whether there has been a detection of a keyboard to the right or the left. Based on this information, each keyboard knows whether it is in the middle, left or right on the keyboard and can infer its respective octave as well. 
 #### Time Performance
 
 ### Knob Update Task
-  This Task trasmits iformation about the rotation of the knobs that control global settings. This means that it includes information about the pitch, the the waveform setting and the reverb amount. These messages are loaded on the msgOutQ and are then transmitted by the CAN transmitter. 
 #### Technical Overview
+This Task trasmits iformation about the rotation of the knobs that control global settings. This means that it includes information about the pitch, the the waveform setting and the reverb amount. These messages are loaded on the msgOutQ and are then transmitted by the CAN transmitter. 
 #### Time Performance
 
 ### Mode Switch Task
-  This Task reads the current waveform mode that is set for all keyboards. This information is given by the Decode Task which reads the CAN messages for the knob states. Based on which waveform should be played, modeSwitch Task will schedule the correct ISR that playes the corresponding tone.
 #### Technical Overview
+This Task reads the current waveform mode that is set for all keyboards. This information is given by the Decode Task which reads the CAN messages for the knob states. Based on which waveform should be played, modeSwitch Task will schedule the correct ISR that playes the corresponding tone.
 #### Time Performance
 
 ### Transmit Task
-  This Task handles a multitude of operations. The primary operation is to read the keyArray in order to determine which keys are being pressed locally. This then will change the currentStepSize according to the keys that are pressed and the local octave. The next thing that is done is to create a new TX_Message that contains information on pressed keys from this keyboard. This message is then loaded on to the msqOutQ to be transmitted by the CAN transmitter. 
 #### Technical Overview
+This Task handles a multitude of operations. The primary operation is to read the keyArray in order to determine which keys are being pressed locally. This then will change the currentStepSize according to the keys that are pressed and the local octave. The next thing that is done is to create a new TX_Message that contains information on pressed keys from this keyboard. This message is then loaded on to the msqOutQ to be transmitted by the CAN transmitter. 
 #### Time Performance
 
 ## ISRs
