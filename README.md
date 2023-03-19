@@ -30,11 +30,12 @@
 #### Time Performance
 
 ### Handshake Thread
-  This Task 
+  This Task checks the keyArray to see whether there has been a detection of a keyboard to the right or the left. Based on this information, each keyboard knows whether it is in the middle, left or right on the keyboard and can infer its respective octave as well. 
 #### Technical Overview
 #### Time Performance
 
 ### Knob Update Task
+  This Task trasmits iformation about the rotation of the knobs that control global settings. This means that it includes information about the pitch, the the waveform setting and the reverb amount. These messages are loaded on the msgOutQ and are then transmitted by the CAN transmitter. 
 #### Technical Overview
 #### Time Performance
 
