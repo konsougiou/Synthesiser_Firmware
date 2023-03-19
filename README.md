@@ -45,6 +45,7 @@
 #### Time Performance
 
 ### Transmit Task
+  This Task handles a multitude of operations. The primary operation is to read the keyArray in order to determine which keys are being pressed locally. This then will change the currentStepSize according to the keys that are pressed and the local octave. The next thing that is done is to create a new TX_Message that contains information on pressed keys from this keyboard. This message is then loaded on to the msqOutQ to be transmitted by the CAN transmitter. 
 #### Technical Overview
 #### Time Performance
 
@@ -73,6 +74,9 @@
 ### trianglewaveISR
 #### Technical Overview
 #### Time Prformance
+
+## Knob Class
+### Description
 
 ## Other technical analysis
 
