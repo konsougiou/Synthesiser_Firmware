@@ -13,65 +13,36 @@ void trianglewavev2ISR()
   int32_t Vout;
   int8_t slopeSign;
   int32_t x;
-  #define period 0.00004545
 
-  for(int z=0;z<36;z++){
+
+  for(int z=0;z < 36 ;z++){
     Vout = 0;
-    if(currentStepSizes[z]==0){
-      if(prevStepSizes[z] != 0 && reverb){
-        if (decayCounters[z] == 22000){
-          decayCounters[z] = 0; 
-          prevStepSizes[z] = 0;
-          internalCounters[z] = 0;
-          continue;
-        }
-
-        decayCounters[z] += 1; 
-
-        if (decayCounters[z] % (2750 * reverb) == 0){
-          internalCounters[z] += 1;
-        } 
-       phaseAccArray[z] += prevStepSizes[z]; 
-       Vout = (phaseAccArray[z] >> 25) >> internalCounters[z];
-      } 
-      else{
-      phaseAccArray[z]= 0;
-      }
-    }
-    else{
+    if(currentStepSizes[z]){
       slopeSign = slopeSigns[z];
       if(slopeSign == 1){                     // Positive slope
-        
-        freq = (195225 /600.28) * currentStepSizes[z];
+        freq = 40.7 * currentStepSizes[z];
         x = timers[z] * freq;
-        if (x > 4294967295){ 
+        if (x > 255){ 
             slopeSigns[z] = -1;
-            timers[z] = 0;
+            timers[z] = 0.0001;
+            x = 255; 
         }
         else{
-            timers[z] += 0.00004545454545;
+            timers[z] += 0.0001;
         }
-
-        // newPhaseAcc = phaseAccArray[z] + (currentStepSizes[z]);
-        // if (newPhaseAcc < phaseAccArray[z]) { // If we're about to overflow the uint32_t, then we switch slope direction downwards and continue
-        // slopeSigns[z] = -1;                   // Change the direction of the slope (to negative)
-        // phaseAccArray[z] = 4294967295;        // is equal to 0xFFFFFFFF
-        // }
-        // else{
-        // phaseAccArray[z] = newPhaseAcc;
-        // }
       }
       else{                                   //Negative slope
-        freq = (195225 / 6.28) * currentStepSizes[z]; 
-        x = 4294967295 - (timers[z] * freq);
-        if (x < 4294967295){ 
+        freq = 40.7 * currentStepSizes[z]; 
+        x = 255 - (timers[z] * freq);
+        if (x < 0){ 
             slopeSigns[z] = 1;
-            timers[z] = 0;
+            timers[z] = 0.0001;
+            x = 0;
         } else{
-            timers[z] += 0.00004545454545;
+            timers[z] += 0.0001;
         }
       }
-      Vout = (x >> 24);
+      Vout = x;
     }
     totalVout += Vout;
   }

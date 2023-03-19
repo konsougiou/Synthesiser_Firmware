@@ -5,7 +5,6 @@
 void sawtoothwaveISR()
 {
   static uint32_t phaseAccArray[36] = {0};
-  static uint32_t Vouts[36] = {0};
   int32_t totalVout = 0;
   int32_t Vout;
   for(int z=0;z<36;z++){

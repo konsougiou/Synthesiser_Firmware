@@ -9,4 +9,6 @@ void sawtoothwaveISR();
 
 void trianglewavev2ISR();
 
+void trianglewaveISR();
+
 void sinewaveISR();

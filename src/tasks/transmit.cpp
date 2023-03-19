@@ -77,25 +77,25 @@ void transmitTask(void *pvParameters)
       TX_Message[i + 1] = 0;
       if (!key1)
       {
-        localCurrentStepSizes[keyOffset] = localMode? (note_frequencies[keyOffset] << (localOctave - 4 + localKnob2Rotation)) : stepSizes[keyOffset] << (localOctave - 4 + localKnob2Rotation);
+        localCurrentStepSizes[keyOffset] = localMode == 1? (note_frequencies[keyOffset] << (localOctave - 4 + localKnob2Rotation)) : stepSizes[keyOffset] << (localOctave - 4 + localKnob2Rotation);
         key_pressed = true;
         TX_Message[i + 1] += 1;
       }
       if (!key2 )
       {
-        localCurrentStepSizes[keyOffset + 1] = localMode? (note_frequencies[keyOffset + 1] << (localOctave - 4 + localKnob2Rotation)): stepSizes[keyOffset + 1] << (localOctave - 4 + localKnob2Rotation); 
+        localCurrentStepSizes[keyOffset + 1] = localMode == 1? (note_frequencies[keyOffset + 1] << (localOctave - 4 + localKnob2Rotation)): stepSizes[keyOffset + 1] << (localOctave - 4 + localKnob2Rotation); 
         key_pressed = true;
         TX_Message[i + 1] += 2;
       }
       if (!key3)
       {
-        localCurrentStepSizes[keyOffset + 2] = localMode? (note_frequencies[keyOffset + 2] << (localOctave - 4 + localKnob2Rotation)) : stepSizes[keyOffset + 2] << (localOctave - 4 + localKnob2Rotation);  
+        localCurrentStepSizes[keyOffset + 2] = localMode == 1? (note_frequencies[keyOffset + 2] << (localOctave - 4 + localKnob2Rotation)) : stepSizes[keyOffset + 2] << (localOctave - 4 + localKnob2Rotation);  
         key_pressed = true;
         TX_Message[i + 1] += 4;
       }
       if (!key4)
       {
-        localCurrentStepSizes[keyOffset + 3] = localMode? (note_frequencies[keyOffset + 3] << (localOctave - 4 + localKnob2Rotation)): stepSizes[keyOffset + 3] << (localOctave - 4 + localKnob2Rotation); 
+        localCurrentStepSizes[keyOffset + 3] = localMode == 1? (note_frequencies[keyOffset + 3] << (localOctave - 4 + localKnob2Rotation)): stepSizes[keyOffset + 3] << (localOctave - 4 + localKnob2Rotation); 
         key_pressed = true;
         TX_Message[i + 1] += 8;
       }
@@ -127,7 +127,7 @@ void transmitTask(void *pvParameters)
     
     xSemaphoreTake(stepSizesMutex, portMAX_DELAY);
 
-    if (localMode == 1)
+    if (localMode == 1 && false)
     {
       for (uint8_t i = 0; i < 12; i++){ 
         uint8_t idx = (12*(tempLocalOctave - 4)) + i;

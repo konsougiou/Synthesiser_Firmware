@@ -63,7 +63,7 @@ void decodeTask(void *pvParameters)
         localReverb = __atomic_load_n(&reverb, __ATOMIC_RELAXED);
 
       xSemaphoreTake(stepSizesMutex, portMAX_DELAY);
-        if (localMode == 1){
+        if (localMode == 1 && false){
             for (uint8_t i = 0; i < 12; i++){ 
               uint8_t idx = (12*(RX_Octave - 4)) + i; 
               currentStepSizes[idx] = localCurrentStepSizes[i];

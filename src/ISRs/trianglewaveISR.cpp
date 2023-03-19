@@ -28,9 +28,30 @@ void trianglewaveISR()
 
         if (decayCounters[z] % (2750 * reverb) == 0){
           internalCounters[z] += 1;
-        } 
-       phaseAccArray[z] += prevStepSizes[z]; 
-       Vout = (phaseAccArray[z] >> 25) >> internalCounters[z];
+        }
+        slopeSign = slopeSigns[z]; 
+        if(slopeSign == 1){                     // Positive slope
+          newPhaseAcc = phaseAccArray[z] + (prevStepSizes[z] << 1);
+          if (newPhaseAcc < phaseAccArray[z]) { // If we're about to overflow the uint32_t, then we switch slope direction downwards and continue
+          slopeSigns[z] = -1;                   // Change the direction of the slope (to negative)
+          phaseAccArray[z] = newPhaseAcc;//4294967295;        // is equal to 0xFFFFFFFF
+          }
+          else{
+          phaseAccArray[z] = newPhaseAcc;
+          }
+          Vout = (phaseAccArray[z] >> 25) >> internalCounters[z]; 
+        }
+        else{                                   //Negative slope
+          newPhaseAcc = phaseAccArray[z] + (prevStepSizes[z] << 1); 
+          if (newPhaseAcc < phaseAccArray[z]) { // If we're about to underflow the uint32_t, then we switch slope direction upwards and continue
+          slopeSigns[z] = 1;                    // Change the direction of the slope (to positive)
+          phaseAccArray[z] = newPhaseAcc;                 
+          }
+          else{
+          phaseAccArray[z] = newPhaseAcc;
+          }
+          Vout = ((UINT32_MAX - phaseAccArray[z]) >> 25) >> internalCounters[z];
+        }
       } 
       else{
       phaseAccArray[z]= 0;
@@ -38,27 +59,28 @@ void trianglewaveISR()
     }
     else{
       slopeSign = slopeSigns[z];
-      if(slopeSign == 1){                     // Positive slope
-        newPhaseAcc = phaseAccArray[z] + (currentStepSizes[z]);
+      if(slopeSign == 1 ){                     // Positive slope
+        newPhaseAcc = phaseAccArray[z] + (currentStepSizes[z] << 1);
         if (newPhaseAcc < phaseAccArray[z]) { // If we're about to overflow the uint32_t, then we switch slope direction downwards and continue
         slopeSigns[z] = -1;                   // Change the direction of the slope (to negative)
-        phaseAccArray[z] = 4294967295;        // is equal to 0xFFFFFFFF
+        phaseAccArray[z] = newPhaseAcc;//4294967295;        // is equal to 0xFFFFFFFF
         }
         else{
         phaseAccArray[z] = newPhaseAcc;
         }
+        Vout = (phaseAccArray[z] >> 24);
       }
       else{                                   //Negative slope
-        newPhaseAcc = phaseAccArray[z] - (currentStepSizes[z]); 
-        if (newPhaseAcc > phaseAccArray[z]) { // If we're about to underflow the uint32_t, then we switch slope direction upwards and continue
+        newPhaseAcc = phaseAccArray[z] + (currentStepSizes[z] << 1); 
+        if (newPhaseAcc < phaseAccArray[z]) { // If we're about to underflow the uint32_t, then we switch slope direction upwards and continue
         slopeSigns[z] = 1;                    // Change the direction of the slope (to positive)
-        phaseAccArray[z] = 0;                 
+        phaseAccArray[z] = newPhaseAcc;                 
         }
         else{
         phaseAccArray[z] = newPhaseAcc;
         }
+        Vout = ((4294967295 - phaseAccArray[z]) >> 24);
       }
-      Vout = (phaseAccArray[z] >> 24);
     }
     totalVout += Vout;
   }
