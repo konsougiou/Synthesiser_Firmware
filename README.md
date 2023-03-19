@@ -40,6 +40,7 @@
 #### Time Performance
 
 ### Mode Switch Task
+  This Task reads the current waveform mode that is set for all keyboards. This information is given by the Decode Task which reads the CAN messages for the knob states. Based on which waveform should be played, modeSwitch Task will schedule the correct ISR that playes the corresponding tone.
 #### Technical Overview
 #### Time Performance
 
