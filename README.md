@@ -22,6 +22,7 @@
 
 ### Decode Thread
 #### Technical Overview
+  This Task reads the incoming messages from the Receiver. The incoming messages are one of two types. There are messages containing information about keys that have been pressed in other keyboards and there are messages that indicate the rotation of knobs on other keyboards. If the message contains information about keys, then this task will access the currentStepSize using a semaphore. It is worth noting that each keyspressed message contains information about the source's octave. This allows the keyboard to play the correct notes at the correct octave. Otherwise it will change the variables containing the current pitch, reverb setting and waveform mode.
 #### Time Performance
 
 ### Display Thread
@@ -29,6 +30,7 @@
 #### Time Performance
 
 ### Handshake Thread
+  This Task 
 #### Technical Overview
 #### Time Performance
 
