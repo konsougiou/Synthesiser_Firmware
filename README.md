@@ -11,3 +11,10 @@
   [Handshaking and auto-detection](doc/handshaking.md)
   
   [Double buffering of audio samples](doc/doubleBuffer.md)
+
+## Execution Times (worse-case in microsecs)
+
+  knobUpdate - 255
+  handshake - 1493
+  sampleISR - 755
+

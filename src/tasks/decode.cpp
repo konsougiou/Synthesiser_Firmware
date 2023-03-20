@@ -15,7 +15,7 @@ void decodeTask(void *pvParameters)
 
   while (1)
   {
-    vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    // vTaskDelayUntil(&xLastWakeTime, xFrequency);
     
     xQueueReceive(msgInQ, tempRX_Message, portMAX_DELAY);
 

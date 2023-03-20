@@ -32,10 +32,11 @@ CAN Format [8 bytes]  (For knob change):
 
 void setup()
 {
+  Serial.begin(9600);
   // Following code is run once:
 
   msgInQ = xQueueCreate(36, 8);
-  msgOutQ = xQueueCreate(36, 8);
+  msgOutQ = xQueueCreate(384, 8);
   
   knob3->setLimits(8, 0);
   knob2->setLimits(2, 0);
@@ -65,11 +66,11 @@ void setup()
   setOutMuxBit(DRST_BIT, HIGH); // Release display logic reset
   u8g2.begin();
   setOutMuxBit(DEN_BIT, HIGH);  // Enable display power supply
-
   //TIM_TypeDef *Instance = TIM1;
   //HardwareTimer *sampleTimer = new HardwareTimer(Instance);
 
   // Initialise UART
+  #ifndef DISABLE_ISR_ATTACH
   sawtoothwaveSampleTimer->setOverflow(22000, HERTZ_FORMAT);
   sawtoothwaveSampleTimer->attachInterrupt(sawtoothwaveISR);
   sawtoothwaveSampleTimer->resume();
@@ -79,8 +80,9 @@ void setup()
 
   sinewaveSampleTimer->setOverflow(10000, HERTZ_FORMAT);
   sinewaveSampleTimer->attachInterrupt(sinewaveISR);
+  #endif
 
-
+  #ifndef DISABLE_THREADS
   TaskHandle_t transmitHandle = NULL;
   xTaskCreate(
       transmitTask,       /* Function that implements the task */
@@ -99,6 +101,8 @@ void setup()
       1,                  /* Task priority */
       &displayUpdateHandle);
 
+  #endif
+
   TaskHandle_t decodeTaskHandle = NULL;
   xTaskCreate(
       decodeTask,         /* Function that implements the task */
@@ -107,6 +111,8 @@ void setup()
       NULL,               /* Parameter passed into the task */
       2,                  /* Task priority */
       &decodeTaskHandle);
+
+  #ifndef DISABLE_THREADS
 
   TaskHandle_t CAN_TX_TaskHandle = NULL;
   xTaskCreate(
@@ -143,6 +149,8 @@ void setup()
       NULL,               /* Parameter passed into the task */
       1,                  /* Task priority */
       &modeSwitchTaskHandle);
+
+  #endif
     
   // Create the mutex for each semaphore that will be used and assign its handle in the setup function
   keyArrayMutex = xSemaphoreCreateMutex();
@@ -152,13 +160,23 @@ void setup()
 
   CAN_TX_Semaphore = xSemaphoreCreateCounting(3, 3);
 
+
   CAN_Init(false);
   setCANFilter(0x123, 0x7ff);
   CAN_RegisterRX_ISR(CAN_RX_ISR);
   CAN_RegisterTX_ISR(CAN_TX_ISR);
   CAN_Start();
 
-  vTaskStartScheduler();
+  Serial.println("hey");
+
+  // vTaskStartScheduler();
+
+	uint32_t startTime = micros();
+	for (int iter = 0; iter < 32; iter++) {
+		decodeTask(NULL);
+	}
+	Serial.println(micros()-startTime);
+	while(1);
 }
 
 void loop()
