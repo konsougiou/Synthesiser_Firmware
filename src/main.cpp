@@ -35,8 +35,8 @@ void setup()
   Serial.begin(9600);
   // Following code is run once:
 
-  msgInQ = xQueueCreate(36, 8);
-  msgOutQ = xQueueCreate(128, 8);
+  msgInQ = xQueueCreate(256, 8);
+  msgOutQ = xQueueCreate(384, 8);
   
   knob3->setLimits(8, 0);
   knob2->setLimits(3, 0);
@@ -81,7 +81,6 @@ void setup()
   sinewaveSampleTimer->attachInterrupt(sinewaveISR);
   #endif
 
-  #ifndef DISABLE_THREADS
   TaskHandle_t transmitHandle = NULL;
   xTaskCreate(
       transmitTask,       /* Function that implements the task */
@@ -99,9 +98,7 @@ void setup()
       NULL,               /* Parameter passed into the task */
       1,                  /* Task priority */
       &displayUpdateHandle);
-
-  #endif
-
+      
   TaskHandle_t decodeTaskHandle = NULL;
   xTaskCreate(
       decodeTask,         /* Function that implements the task */
@@ -110,8 +107,6 @@ void setup()
       NULL,               /* Parameter passed into the task */
       2,                  /* Task priority */
       &decodeTaskHandle);
-
-  #ifndef DISABLE_THREADS
 
   TaskHandle_t CAN_TX_TaskHandle = NULL;
   xTaskCreate(
@@ -148,8 +143,6 @@ void setup()
       NULL,               /* Parameter passed into the task */
       1,                  /* Task priority */
       &modeSwitchTaskHandle);
-
-  #endif
     
   // Create the mutex for each semaphore that will be used and assign its handle in the setup function
   keyArrayMutex = xSemaphoreCreateMutex();
@@ -172,7 +165,7 @@ void setup()
 
 
   // vTaskStartScheduler();
-  Serial.println("hey");
+  Serial.println("heyyy");
 	uint32_t startTime = micros();
 	for (int iter = 0; iter < 32; iter++) {
 		decodeTask(NULL);

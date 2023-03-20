@@ -17,7 +17,7 @@ void decodeTask(void *pvParameters)
   {
     // vTaskDelayUntil(&xLastWakeTime, xFrequency);
     
-    xQueueReceive(msgInQ, tempRX_Message, portMAX_DELAY);
+    // xQueueReceive(msgInQ, tempRX_Message, portMAX_DELAY);
 
     uint32_t localCurrentStepSizes[12] = {0};
 
@@ -33,7 +33,7 @@ void decodeTask(void *pvParameters)
     localKnob2Rotation = __atomic_load_n(&knob2Rotation, __ATOMIC_RELAXED); 
     localMode = __atomic_load_n(&mode, __ATOMIC_RELAXED); 
 
-    if (!(westDetect == 1 && eastDetect == 1)){
+    if (!(westDetect == 1 && eastDetect == 1) || 1){
       if (RX_Message[0] == 0){
       uint32_t RX_Octave = RX_Message[4];
       for(int i = 0; i < 3; i++){
@@ -94,5 +94,6 @@ void decodeTask(void *pvParameters)
       __atomic_store_n(&mode, tempMode, __ATOMIC_RELAXED);
       } 
     }
+    break;
   } 
 }

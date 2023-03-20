@@ -66,5 +66,6 @@ void modeSwitchTask(void *pvParameters){
         }
     }
     prevMode = localMode;
+    break;
   }
 }

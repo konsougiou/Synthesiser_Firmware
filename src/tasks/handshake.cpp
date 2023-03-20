@@ -36,5 +36,6 @@ void handshakeTask(void *pvParameters)
     digitalWrite(REN_PIN, 0);
 
     ran = 2;
+    break;
   }
 }
