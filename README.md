@@ -72,7 +72,7 @@ This ISR has one purpose and that is to give the semaphore each time a mailbox b
 
 Different ISRs that output sawtooth, triangle and sine waves were implemented, each producing a distinct sound. They all read from the
 currentStepSize array that contains the stepSizes of the notes that are currently pressed in each of its entries (0 otherwise), and perform mathematical
-calculations to produce a differnt Vout for each wave. Since these interrupts were executed very frequently, extra caution was put in to making their critical paths more performant. In addition to reading from the currentStepSizes array, They also read the previousStepSizes array in order to produce
+calculations to produce a differnt Vout for each wave. Since these interrupts were executed very frequently, extra caution was put in to making their critical paths more performant. In addition to reading from the `currentStepSizes` array, They also read the `previousStepSizes` array in order to produce
 a delay effect which is controlled by one of the knobs and allows the sound to slowly fade.
 
 In all the ISRs the waveforms of all the notes that were played at a particular instance were superimposed in order to produce a polyphony effect.
