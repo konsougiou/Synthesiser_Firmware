@@ -67,18 +67,17 @@ void setup()
   u8g2.begin();
   setOutMuxBit(DEN_BIT, HIGH);  // Enable display power supply
 
-  //TIM_TypeDef *Instance = TIM1;
-  //HardwareTimer *sampleTimer = new HardwareTimer(Instance);
 
   // Initialise UART
-  
   #ifndef DISABLE_ISR_ATTACH
-  sampleTimer->setOverflow(22000, HERTZ_FORMAT);
-  sampleTimer->attachInterrupt(sampleISR);
-  sampleTimer->resume();
+  sawtoothwaveSampleTimer->setOverflow(22000, HERTZ_FORMAT);
+  sawtoothwaveSampleTimer->attachInterrupt(sawtoothwaveISR);
+  sawtoothwaveSampleTimer->resume();
 
-  
-  sinewaveSampleTimer->setOverflow(5000, HERTZ_FORMAT);
+  trianglewaveSampleTimer->setOverflow(22000, HERTZ_FORMAT);
+  trianglewaveSampleTimer->attachInterrupt(trianglewaveISR);
+
+  sinewaveSampleTimer->setOverflow(10000, HERTZ_FORMAT);
   sinewaveSampleTimer->attachInterrupt(sinewaveISR);
   #endif
 
@@ -101,6 +100,8 @@ void setup()
       1,                  /* Task priority */
       &displayUpdateHandle);
 
+  #endif
+
   TaskHandle_t decodeTaskHandle = NULL;
   xTaskCreate(
       decodeTask,         /* Function that implements the task */
@@ -109,6 +110,8 @@ void setup()
       NULL,               /* Parameter passed into the task */
       2,                  /* Task priority */
       &decodeTaskHandle);
+
+  #ifndef DISABLE_THREADS
 
   TaskHandle_t CAN_TX_TaskHandle = NULL;
   xTaskCreate(
@@ -127,7 +130,7 @@ void setup()
       NULL,               /* Parameter passed into the task */
       1,                  /* Task priority */
       &handshakeTaskHandle);
-  
+
   TaskHandle_t knobUpdateTaskHandle = NULL;
   xTaskCreate(
       knobUpdateTask,     /* Function that implements the task */
@@ -145,9 +148,8 @@ void setup()
       NULL,               /* Parameter passed into the task */
       1,                  /* Task priority */
       &modeSwitchTaskHandle);
-  #endif
 
-  
+  #endif
     
   // Create the mutex for each semaphore that will be used and assign its handle in the setup function
   keyArrayMutex = xSemaphoreCreateMutex();
@@ -170,14 +172,13 @@ void setup()
 
 
   // vTaskStartScheduler();
+  Serial.println("hey");
 	uint32_t startTime = micros();
 	for (int iter = 0; iter < 32; iter++) {
-		sampleISR();
+		decodeTask(NULL);
 	}
 	Serial.println(micros()-startTime);
 	while(1);
-
-
 }
 
 void loop()

@@ -3,10 +3,13 @@
 
 
 TIM_TypeDef *Instance1 = TIM1;
-HardwareTimer *sampleTimer = new HardwareTimer(Instance1);
+HardwareTimer *sawtoothwaveSampleTimer = new HardwareTimer(Instance1);
 
 TIM_TypeDef *Instance2 = TIM2;
 HardwareTimer *sinewaveSampleTimer = new HardwareTimer(Instance2);
+
+TIM_TypeDef *Instance3 = TIM15;
+HardwareTimer *trianglewaveSampleTimer = new HardwareTimer(Instance2);
 
 const uint32_t interval = 100; // Display update interval
 const double frequency_ratio = pow(2.0, 1.0 / 12.0);

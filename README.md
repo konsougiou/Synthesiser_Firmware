@@ -16,4 +16,5 @@
 
   knobUpdate - 255 microsecs
   handshake - 1493 microsecs
-
+  sawtoothwaveISR - 745 microsecs
+  
