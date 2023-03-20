@@ -9,8 +9,8 @@ void knobUpdateTask(void *pvParameters){
   uint8_t localReverb;
   uint8_t prevReverb;
 
-  uint8_t localKnob2Rotation;
-  uint8_t prevKnob2Rotation;
+  uint8_t localPitch;
+  uint8_t prevPitch;
 
   uint8_t localMode;
   uint8_t prevMode;
@@ -35,20 +35,32 @@ void knobUpdateTask(void *pvParameters){
     TX_Message[1] = localReverb;
 
     // Sets the TX message field to store the pitch that was set locally
-    localKnob2Rotation = __atomic_load_n(&knob2Rotation, __ATOMIC_RELAXED); 
-    TX_Message[2] = localKnob2Rotation;
+    localPitch = __atomic_load_n(&pitch, __ATOMIC_RELAXED); 
+    TX_Message[2] = localPitch;
 
     localMode = __atomic_load_n(&mode, __ATOMIC_RELAXED); 
     TX_Message[3] = localMode;
 
-    if ((localKnob2Rotation != prevKnob2Rotation || localReverb != prevReverb || localMode != prevMode) && !(westDetect == 1 && eastDetect == 1))
+    if ((localPitch != prevPitch || localReverb != prevReverb || localMode != prevMode) && !(westDetect == 1 && eastDetect == 1))
     {
       xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
     } 
 
     prevReverb = localReverb;
-    prevKnob2Rotation = localKnob2Rotation;
+    prevPitch= localPitch;
     prevMode = localMode;
+
+    // For reverb knob
+    knob1->updateRotation(reverb);
+    
+    // For pitch knob
+    knob2->updateRotation(pitch); 
+
+    // For volume knob
+    knob3->updateRotation(volume);
+
+    // For mode
+    knob0->updateRotation(mode);
   }
   
 }

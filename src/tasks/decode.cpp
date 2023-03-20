@@ -30,12 +30,13 @@ void decodeTask(void *pvParameters)
 
     xSemaphoreGive(queueReceiveMutex);
     
-    localKnob2Rotation = __atomic_load_n(&knob2Rotation, __ATOMIC_RELAXED); 
+    localKnob2Rotation = __atomic_load_n(&pitch, __ATOMIC_RELAXED); 
     localMode = __atomic_load_n(&mode, __ATOMIC_RELAXED); 
 
     if (!(westDetect == 1 && eastDetect == 1)){
       if (RX_Message[0] == 0){
       uint32_t RX_Octave = RX_Message[4];
+      if (RX_Octave == 5) __atomic_store_n(&middleKeyboardFound, true, __ATOMIC_RELAXED); 
       for(int i = 0; i < 3; i++){
         uint32_t keyGroup = RX_Message[i + 1];
         uint8_t key4 = (keyGroup % 16) >> 3;
@@ -63,23 +64,16 @@ void decodeTask(void *pvParameters)
         localReverb = __atomic_load_n(&reverb, __ATOMIC_RELAXED);
 
       xSemaphoreTake(stepSizesMutex, portMAX_DELAY);
-        if (localMode == 1 && false){
-            for (uint8_t i = 0; i < 12; i++){ 
-              uint8_t idx = (12*(RX_Octave - 4)) + i; 
-              currentStepSizes[idx] = localCurrentStepSizes[i];
-            } 
-        } 
-        else{
+
         for (uint8_t i = 0; i < 12; i++){ 
-            uint8_t idx = (12*(RX_Octave - 4)) + i;
-            currentStepSizes[idx] = localCurrentStepSizes[i]; 
-            if (localCurrentStepSizes[i] != 0){
-            prevStepSizes[idx] = localReverb ? localCurrentStepSizes[i] : 0;
-            decayCounters[i] = 0; 
-            internalCounters[i] = 0;
+          uint8_t idx = (12*(RX_Octave - 4)) + i;
+          currentStepSizes[idx] = localCurrentStepSizes[i]; 
+          if (localCurrentStepSizes[i] != 0){
+          prevStepSizes[idx] = localReverb ? localCurrentStepSizes[i] : 0;
+          decayCounters[i] = 0; 
+          internalCounters[i] = 0; 
           }
         }
-      }
         
       xSemaphoreGive(stepSizesMutex);
       }
@@ -88,7 +82,7 @@ void decodeTask(void *pvParameters)
       __atomic_store_n(&reverb, tempReverb, __ATOMIC_RELAXED);
 
       tempKnob2Rotation = RX_Message[2];
-      __atomic_store_n(&knob2Rotation, tempKnob2Rotation, __ATOMIC_RELAXED);
+      __atomic_store_n(&pitch, tempKnob2Rotation, __ATOMIC_RELAXED);
 
       tempMode = RX_Message[3];
       __atomic_store_n(&mode, tempMode, __ATOMIC_RELAXED);

@@ -36,11 +36,11 @@ void sawtoothwaveISR()
     }
     totalVout += Vout;
   }
-  totalVout = totalVout >> (8 - knob3Rotation);
+  totalVout = totalVout >> (8 - volume);
   totalVout = min(255, (int) totalVout);
   totalVout = max(0, (int) totalVout);
 
-  if (knob3Rotation == 0){
+  if (volume == 0){
     totalVout = 0;
   }
   

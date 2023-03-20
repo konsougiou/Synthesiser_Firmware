@@ -79,16 +79,16 @@ void trianglewaveISR()
         else{
         phaseAccArray[z] = newPhaseAcc;
         }
-        Vout = ((4294967295 - phaseAccArray[z]) >> 24);
+        Vout = ((UINT32_MAX - phaseAccArray[z]) >> 24);
       }
     }
     totalVout += Vout;
   }
-  totalVout = totalVout >> (8 - knob3Rotation);
+  totalVout = totalVout >> (8 - volume);
   totalVout = min(255, (int) totalVout);
   totalVout = max(0, (int) totalVout);
 
-  if (knob3Rotation == 0){
+  if (volume == 0){
     totalVout = 0;
   }
   

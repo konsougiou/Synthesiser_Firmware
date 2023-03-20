@@ -19,7 +19,7 @@ const uint32_t stepSizes[12] = {25534599,27051354,28658204,30360502,32163915,340
                               
 volatile uint32_t freqs [] = {2000, 5000, 10000, 17000, 22000, 28000, 30000, 40000, 50000};
 
-uint32_t note_frequencies[12] = { 1617, 1713, 1815, 1923, 2037, 2158, 2286, 2422, 2566, 2719, 2880, 3051 };
+const uint32_t note_frequencies[12] = { 1617, 1713, 1815, 1923, 2037, 2158, 2286, 2422, 2566, 2719, 2880, 3051 };
 //double periods[12] = {0.00382021, 0.00360601, 0.00340382, 0.00321297, 0.00303282, 0.00286277, 0.00270226, 0.00255075, 0.00240773, 0.00227273, 0.0021453, 0.00202501}; 
 //------sinewave calculation parameters-------//
 
@@ -55,13 +55,15 @@ SemaphoreHandle_t CAN_TX_Semaphore;
 
 bool pressOrReceive = false; // False == Receive, True == Press
 
-uint8_t knob3Rotation = 6;
+uint8_t volume = 6;
 
-uint8_t knob2Rotation = 0;
+uint8_t pitch = 0;
 
 uint8_t reverb = 0;
 
 uint8_t mode = 0;
+
+bool middleKeyboardFound = false;
 
 uint32_t decayCounters[36] = {0};
 uint32_t internalCounters[36] = {0};

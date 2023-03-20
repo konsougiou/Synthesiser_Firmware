@@ -23,7 +23,7 @@ extern const uint32_t step_scaling;
 
 extern const uint32_t stepSizes[12];
 extern volatile uint32_t freqs[];
-extern uint32_t note_frequencies[12];
+extern const uint32_t note_frequencies[12];
 extern double periods[12];
 
 //------sinewave calculation parameters-------//
@@ -57,14 +57,16 @@ extern QueueHandle_t msgOutQ;
 extern uint8_t RX_Message[8];
 extern uint8_t TX_Message[8];
 
-extern uint8_t knob3Rotation;
-extern uint8_t knob2Rotation;
+extern uint8_t volume;
+extern uint8_t pitch;
 extern uint8_t mode;
 
 extern uint8_t westDetect;
 extern uint8_t eastDetect;
 
 extern uint8_t reverb;
+
+extern bool middleKeyboardFound;
 
 extern uint32_t decayCounters[36];
 extern uint32_t internalCounters[36];

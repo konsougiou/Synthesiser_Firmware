@@ -60,11 +60,11 @@ void displayUpdateTask(void *pvParameters)
     u8g2.println(localReverb ,HEX);
 
     u8g2.setCursor(92, 30);
-    uint8_t localPitch = __atomic_load_n(&knob2Rotation, __ATOMIC_RELAXED);
+    uint8_t localPitch = __atomic_load_n(&pitch, __ATOMIC_RELAXED);
     u8g2.println(localPitch ,HEX);
 
     u8g2.setCursor(102, 30);
-    uint8_t localKnob3Rotation = __atomic_load_n(&knob3Rotation, __ATOMIC_RELAXED);
+    uint8_t localKnob3Rotation = __atomic_load_n(&volume, __ATOMIC_RELAXED);
     u8g2.println(localKnob3Rotation, DEC);
 
     while (CAN_CheckRXLevel())

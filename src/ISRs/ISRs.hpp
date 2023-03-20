@@ -7,8 +7,6 @@ void CAN_RX_ISR(void);
 
 void sawtoothwaveISR();
 
-void trianglewavev2ISR();
-
 void trianglewaveISR();
 
 void sinewaveISR();

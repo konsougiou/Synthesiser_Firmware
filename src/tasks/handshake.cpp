@@ -6,7 +6,7 @@
 void handshakeTask(void *pvParameters)
 {
 
-  const TickType_t xFrequency = 30 / portTICK_PERIOD_MS;
+  const TickType_t xFrequency = 50 / portTICK_PERIOD_MS;
   TickType_t xLastWakeTime = xTaskGetTickCount();
   while (1)
   {
@@ -32,5 +32,6 @@ void handshakeTask(void *pvParameters)
     keyArray[6] = readCols();                     // Read column inputs
     xSemaphoreGive(keyArrayMutex);
     digitalWrite(REN_PIN, 0);
+
   }
 }
