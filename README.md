@@ -22,7 +22,7 @@
 
 ### Decode Thread
 #### Technical Overview
-  This task reads the incoming messages from the Receiver. The incoming messages are one of two types. There are messages containing information about keys that have been pressed in other keyboards and there are messages that indicate the rotation of knobs on other keyboards. If the message contains information about keys, then this task will access the 'currentStepSize' using a semaphore. It is worth noting that each keyspressed message contains information about the source's octave. This allows the keyboard to play the correct notes at the correct octave. Otherwise it will change the variables containing the current pitch, reverb setting and waveform mode.
+  This task reads the incoming messages from the Receiver. The incoming messages are one of two types. There are messages containing information about keys that have been pressed in other keyboards and there are messages that indicate the rotation of knobs on other keyboards. If the message contains information about keys, then this task will access the `currentStepSize` using a semaphore. It is worth noting that each keyspressed message contains information about the source's octave. This allows the keyboard to play the correct notes at the correct octave. Otherwise it will change the variables containing the current pitch, reverb setting and waveform mode.
 #### Time Performance
 
 ### Display Thread
@@ -32,12 +32,12 @@ This task handles the contents of what gets sent to the OLED display. In particu
 
 ### Handshake Thread
 #### Technical Overview
-This task checks the keyArray to see whether there has been a detection of a keyboard to the right or the left. Based on this information, each keyboard knows whether it is in the middle, left or right on the keyboard and can infer its respective octave as well. 
+This task checks the `keyArray` to see whether there has been a detection of a keyboard to the right or the left. Based on this information, each keyboard knows whether it is in the middle, left or right on the keyboard and can infer its respective octave as well. 
 #### Time Performance
 
 ### Knob Update Task
 #### Technical Overview
-This task trasmits information about the rotation of the knobs that control global settings. This means that it includes information about the pitch, the the waveform setting and the reverb amount. These messages are loaded on the 'msgOutQ' and are then transmitted by the CAN transmitter. 
+This task trasmits information about the rotation of the knobs that control global settings. This means that it includes information about the pitch, the the waveform setting and the reverb amount. These messages are loaded on the `msgOutQ` and are then transmitted by the CAN transmitter. 
 #### Time Performance
 
 ### Mode Switch Task
@@ -47,7 +47,7 @@ This task reads the current waveform mode that is set for all keyboards. This in
 
 ### Transmit Task
 #### Technical Overview
-This task handles a multitude of operations. The primary operation is to read the keyArray in order to determine which keys are being pressed locally. This then will change the currentStepSize according to the keys that are pressed and the local octave. The next thing that is done is to create a new 'TX_Message' that contains information on pressed keys from this keyboard. This message is then loaded on to the 'msqOutQ' to be transmitted by the CAN transmitter. 
+This task handles a multitude of operations. The primary operation is to read the keyArray in order to determine which keys are being pressed locally. This then will change the currentStepSize according to the keys that are pressed and the local octave. The next thing that is done is to create a new `TX_Message` that contains information on pressed keys from this keyboard. This message is then loaded on to the `msqOutQ` to be transmitted by the CAN transmitter. 
 #### Time Performance
 
 ## ISRs
