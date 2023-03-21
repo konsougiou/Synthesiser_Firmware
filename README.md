@@ -72,8 +72,7 @@ This ISR has one purpose and that is to give the semaphore each time a mailbox b
 
 Different ISRs that output sawtooth, triangle and sine waves were implemented, each producing a distinct sound. They all read from the
 currentStepSize array that contains the stepSizes of the notes that are currently pressed in each of its entries (0 otherwise), and perform mathematical
-calculations to produce a differnt Vout for each wave. Since these interrupts were executed very frequently, extra caution was put in to making their critical paths more performant. In addition to reading from the `currentStepSizes` array, They also read the `previousStepSizes` array in order to produce
-a delay effect which is controlled by one of the knobs and allows the sound to slowly fade.
+calculations to produce a differnt Vout for each wave. Since these interrupts were executed very frequently, extra caution was put in to making their critical paths more performant. More on this is explained in the individual ISR sections. In addition to reading from the `currentStepSizes` array, they also read the `previousStepSizes` array in order to produce a delay effect which is controlled by one of the knobs and allows the sound to slowly fade.
 
 In all the ISRs the waveforms of all the notes that were played at a particular instance were superimposed in order to produce a polyphony effect.
 Additionally, the output voltage was kept between 0 and 255 in order to avoid distortion.
@@ -92,16 +91,16 @@ As mentioned above, slow operation were avoided inside this ISR, and especially 
 
 #### Technical Overview
 
-This ISR was activated when the waveform was set to triangle wave. It operation is very similar to the sawtooth ISR. There are two main differences.
+This ISR was activated when the waveform was set to triangle wave. Its operation is very similar to the sawtooth ISR. There are two main differences.
 Firstly, a state was kept for each of the notes (using a 36 `uint32_t` array) which indicated whether its waveform had an upward or a downward slope at the time. Additionally, the current step sizes were multiplied by 2 (using a bitshift) since in order to achieve the same period as the sawtooth wave,
-the transition from 0 t0 255 had to happen twice as fast.
+the transition from 0 to 255 had to happen twice as fast (since it also had to go back to 0 in a period).
 
 #### Time Prformance
 
 ### sinewaveISR
 
 This ISR was activated when the waveform was set to sine wave. This interrupt operates somewhat differntly to the other two. Although it also uses the current and previous step sizes (for delay) arrays, when this waveform mode is active they have been populated by the keyDetect and decode tasks with angular frequencies instead.
-These are used to calculate the sine function at each time instance. A static timer was thus used, which was incremented in each call of the interrupt by 0.1 ms (1 over the frequency with which it was called). Initially, both the `"cmath"` `std::sin()` function and a lookup table were tested. The former was too slow to support polyphony, and the latter produced lower quality sound. The implementation that was found to have a good balance of performance and quality was the `"arm_math.h"` library `arm_sin_f32()` function. This proved performant enough to support both polyphony and delay, as well as smooth output.
+These are used to calculate the sine function at each time instance. A static timer was thus used, which was incremented in each call of the interrupt by 0.1 ms (1 over the frequency with which it was called). Initially, both the `"cmath"` `std::sin()` function and a lookup table were tested. The former was too slow to support polyphony, and the latter produced lower quality sound. The implementation that was found to have a good balance of performance and quality was the `"arm_math.h"` library `arm_sin_f32()` function which effectivly utilizes the FPU found in the Arm Cortex-M4 core. This proved performant enough to support both polyphony and delay, as well as smooth output.
 
 #### Technical Overview
 #### Time Performance
