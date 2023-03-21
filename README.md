@@ -54,14 +54,14 @@ This task handles a multitude of operations. The primary operation is to read th
 
 index | information
 ---|---
-0: KeyChange (Boolean Value)
-1: First 4 keys
-2: Second 4 keys
-3: Last 4 keys
-4: Octave
-5: 
-6: 
-7: 
+0| KeyChange (Boolean Value)
+1| First 4 keys
+2| Second 4 keys
+3| Last 4 keys
+4| Octave
+5| -
+6| -
+7| -
 #### Time Performance
 
 ## CAN ISRs
