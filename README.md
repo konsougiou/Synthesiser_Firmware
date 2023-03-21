@@ -50,18 +50,23 @@ This task reads the current waveform mode that is set for all keyboards. This in
 
 ### keyDetect Task
 #### Technical Overview
-This task handles a multitude of operations. The primary operation is to read the keyArray in order to determine which keys are being pressed locally. This then will change the currentStepSize according to the keys that are pressed and the local octave. The next thing that is done is to create a new `TX_Message` that contains information on pressed keys from this keyboard. This message is then loaded on to the `msqOutQ` to be transmitted by the CAN transmitter. The format of `TX_Message` is the following:
+This task handles two main operations. The primary operation is to read the keyArray in order to determine which keys are being pressed locally. This then will change the currentStepSize according to the keys that are pressed and the local octave. The next thing that is done is to create a new `TX_Message` that contains information on pressed keys from this keyboard. This message is then loaded on to the `msqOutQ` to be transmitted by the CAN transmitter. The format of `TX_Message` is the following:
 
 index | information
 ---|---
-0| KeyChange (Boolean Value)
+0| message type (0 in this case, representing key press event)
 1| First 4 keys
 2| Second 4 keys
 3| Last 4 keys
-4| Octave
+4| local Octave
 5| -
 6| -
 7| -
+
+Each key was represented by one bit in the four least significant bits of three `uint32_t`s (indexes 1-3 of the message). If the key was pressed, the corresponding bit was set high, and low otherwise.
+
+A new message was sent only if a key change was detected (at least one pressed <-> unpressed transition).
+
 #### Time Performance
 
 ## CAN ISRs
