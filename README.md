@@ -37,7 +37,7 @@ This task checks the `keyArray` to see whether there has been a detection of a k
 
 ### Knob Update Task
 #### Technical Overview
-This task trasmits information about the rotation of the knobs that control global settings. This means that it includes information about the pitch, the the waveform setting and the reverb amount. These messages are loaded on the `msgOutQ` and are then transmitted by the CAN transmitter. 
+This task trasmits information about the rotation of the knobs that control global settings. This means that it includes information about the pitch, the the waveform setting and the reverb amount. These messages are loaded on the `msgOutQ` and are then transmitted by the CAN transmitter. It is also in charge of calling the `updateRotation()` function for each one of the four knob instances (including volume which wasn't mentioned before since it is local and thus not transimtted).
 #### Time Performance
 
 ### Mode Switch Task
@@ -76,6 +76,9 @@ calculations to produce a differnt Vout for each wave. Since these interrupts we
 
 In all the ISRs the waveforms of all the notes that were played at a particular instance were superimposed in order to produce a polyphony effect.
 Additionally, the output voltage was kept between 0 and 255 in order to avoid distortion.
+
+It is also important to mention that each ISR was in charge of outputing a waveform for keys coming from all three keyboards, and thus all 
+include a loop that iterates through all 36 keys.
 
 ### sawtoothwaveISR
 #### Technical Overview
