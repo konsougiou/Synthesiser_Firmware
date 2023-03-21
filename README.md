@@ -16,13 +16,16 @@
   
 ## General non-technical description
 
-  This is a stackable Synthesiser. Each individual module is configured to work in cooperation with up to 2 other boards. The boards connect to create a full keyboard of up to 3 octaves. The result is a full synth that can play stereo sound out of 3 speackers and act like a normal piano in the sense that it can play any cord, it is not limited to single notes. We have also added some other functionalities you might find in a normal synthesiser. The right-most knob on each keyboard can be used to alter the volume on each individual keyboard, this allows the user to fully customise the sound experience from this keyboard. The second knob from the right will alter the pitch of the whole keyboard. This means that all modules will move octaves acourdingly in order to keep their relative tonality. Finally, the third knob is used to alter the reverb on the whole keyboard and make the notes fade away nicely if desired.  
+  This is a stackable Synthesiser. Each individual module is configured to work in cooperation with up to 2 other boards. The boards connect to create a full keyboard of up to 3 octaves. The result is a full synth that can play stereo sound out of 3 speackers and act like a normal piano in the sense that it can play any cord, it is not limited to single notes. We have also added some other functionalities you might find in a normal synthesiser. The right-most knob on each keyboard can be used to alter the volume on each individual keyboard, this allows the user to fully customise the sound experience from this keyboard. The second knob from the right will alter the pitch of the whole keyboard. This means that all modules will move octaves acourdingly in order to keep their relative tonality. The third knob is used to alter the reverb on the whole keyboard and make the notes fade away nicely if desired.
+Finally, the third knob is used to switch between sawtooth, triangle and sine output waveforms, and thus produce three distinct sounds. The pitch, reverb
+and waveform mode knobs can be rotated from any of the three keyboards, and the change is preceived by all keyboards.
 
 ## Tasks
 
 ### Decode Thread
 #### Technical Overview
-  This task reads the incoming messages from the Receiver. The incoming messages are one of two types. There are messages containing information about keys that have been pressed in other keyboards and there are messages that indicate the rotation of knobs on other keyboards. If the message contains information about keys, then this task will access the `currentStepSize` using a semaphore. It is worth noting that each keyspressed message contains information about the source's octave. This allows the keyboard to play the correct notes at the correct octave. Otherwise it will change the variables containing the current pitch, reverb setting and waveform mode.
+  This task reads the incoming messages from the Receiver. The incoming messages are one of two types. There are messages containing information about keys that have been pressed in other keyboards and there are messages that indicate the rotation of knobs on other keyboards. If the message contains information about keys, then this task will access the `currentStepSize` using a semaphore. Each keyspressed message contains information about the source keyboards octave, and based on this, either the first, middle or last 12 elements of the 36 `uint32_t` sized step sizes array will be populated. This allows the keyboard to play the correct notes at the correct octave. If the received message indicates a knob rotation, it will change the variables containing the current pitch, reverb setting and waveform mode based on changes happening on other keyboards. This happens in order to keep these three 
+settings consistent throughout all keyboards.
 #### Time Performance
 
 ### Display Thread
@@ -45,9 +48,20 @@ This task trasmits information about the rotation of the knobs that control glob
 This task reads the current waveform mode that is set for all keyboards. This information is given by the Decode Task which reads the CAN messages for the knob states. Based on which waveform should be played, modeSwitch Task will schedule the correct ISR that playes the corresponding tone.
 #### Time Performance
 
-### Transmit Task
+### keyDetect Task
 #### Technical Overview
-This task handles a multitude of operations. The primary operation is to read the keyArray in order to determine which keys are being pressed locally. This then will change the currentStepSize according to the keys that are pressed and the local octave. The next thing that is done is to create a new `TX_Message` that contains information on pressed keys from this keyboard. This message is then loaded on to the `msqOutQ` to be transmitted by the CAN transmitter. 
+This task handles a multitude of operations. The primary operation is to read the keyArray in order to determine which keys are being pressed locally. This then will change the currentStepSize according to the keys that are pressed and the local octave. The next thing that is done is to create a new `TX_Message` that contains information on pressed keys from this keyboard. This message is then loaded on to the `msqOutQ` to be transmitted by the CAN transmitter. The format of `TX_Message` is the following:
+
+index | information
+---|---
+0: KeyChange (Boolean Value)
+1: First 4 keys
+2: Second 4 keys
+3: Last 4 keys
+4: Octave
+5: 
+6: 
+7: 
 #### Time Performance
 
 ## CAN ISRs
