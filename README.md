@@ -56,21 +56,24 @@ Minimum initiation interval: 0.2 ms
 settings consistent throughout all keyboards.
 #### Time Performance
 Worst runtime: 24.78 μs\
-Minimum initiation interval: 0.2 ms 
+Minimum initiation interval: 0.2 ms\
+Task execution time: 49.56 μs
 
 ### Display Thread
 #### Technical Overview
 This task handles the contents of what gets sent to the OLED display. In particular, it updates the connected display on the synth module with information about the current states/values of the volume, pitch, reverb and the type of wave that is being used (Sine, triangle or Sawtooth). It also has a small indicator that shows the relative position of the synth module compared to the other ones that it is connected to. It also outputs some of the relavant data recieved via CAN messages from other synth modules when a key is pressed/a knob has been rotated.
 #### Time Performance
 Worst runtime: 14.41 μs\
-Minimum initiation interval: 0.8 ms
+Minimum initiation interval: 0.8 ms\
+Task execution time: 14.41 μs
 
 ### Handshake Thread
 #### Technical Overview
 This task checks the `keyArray` to see whether there has been a detection of a keyboard to the right or the left. Based on this information, each keyboard knows whether it is in the middle, left or right on the keyboard and can infer its respective octave as well. 
 #### Time Performance
 Worst runtime: 46.28 μs\
-Minimum initiation interval: 0.4 ms
+Minimum initiation interval: 0.4 ms\
+Task execution time: 46.28 μs
 
 ### Knob Update Task
 #### Technical Overview
@@ -89,14 +92,16 @@ index | information
 
 #### Time Performance
 Worst runtime: 11.72 μs\
-Minimum initiation interval: 0.4 ms
+Minimum initiation interval: 0.4 ms\
+Task execution time: 11.72 μs
 
 ### Mode Switch Task
 #### Technical Overview
 This task reads the current waveform mode that is set for all keyboards. This information is given by the Decode Task which reads the CAN messages for the knob states. Based on which waveform should be played, modeSwitch Task will schedule the correct ISR that playes the corresponding tone.
 #### Time Performance
 Worst runtime: 27.78 μs\
-Minimum initiation interval: 0.4 ms
+Minimum initiation interval: 0.4 ms\
+Task execution time: 27.78 μs
 
 ## CAN ISRs
 
