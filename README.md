@@ -18,7 +18,12 @@
 
   This is a stackable Synthesiser. Each individual module is configured to work in cooperation with up to 2 other boards. The boards connect to create a full keyboard of up to 3 octaves. The result is a full synth that can play stereo sound out of 3 speackers and act like a normal piano in the sense that it can play any cord, it is not limited to single notes. We have also added some other functionalities you might find in a normal synthesiser. The right-most knob on each keyboard can be used to alter the volume on each individual keyboard, this allows the user to fully customise the sound experience from this keyboard. The second knob from the right will alter the pitch of the whole keyboard. This means that all modules will move octaves acourdingly in order to keep their relative tonality. The third knob is used to alter the reverb on the whole keyboard and make the notes fade away nicely if desired.
 Finally, the third knob is used to switch between sawtooth, triangle and sine output waveforms, and thus produce three distinct sounds. The pitch, reverb
-and waveform mode knobs can be rotated from any of the three keyboards, and the change is preceived by all keyboards.
+and waveform mode knobs can be rotated from any of the three keyboards, and the change is preceived by all keyboards. 
+
+The volume setting can be swiped from 0 to 8.
+The reverb level can be swiped from 0 to 2.
+The pitch setting can take values from 0 to 2 for the sawtooth and triangle waves (it increases the octave of each keyboard by one) and from 1 to 0 
+fot the sine wave (the sinewave ISR sampling rate was smaller and thus couldn't detect some of the frequencies from the highest Octave)
 
 ## Tasks
 
