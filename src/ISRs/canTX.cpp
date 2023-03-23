@@ -4,6 +4,8 @@
 
 void CAN_TX_Task(void *pvParameters)
 {
+  const TickType_t xFrequency = 60 / portTICK_PERIOD_MS;
+  TickType_t xLastWakeTime = xTaskGetTickCount();
   uint8_t msgOut[8];
   while (1)
   {
