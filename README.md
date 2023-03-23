@@ -185,7 +185,7 @@ ISR execution time: 51220 μs
 
 ### Timing Analysis
 
-| Task              | Initiation Interval | Execution Time | RMS Priority | $lceil \frac{\tau_n}{\tau_i} \rceil$ | $lceil \frac{\tau_n}{\tau_i} \rceilT_i$ |
+| Task              | Initiation Interval | Execution Time | RMS Priority | $\lceil \frac{\tau_n}{\tau_i} \rceil$ | $\lceil \frac{\tau_n}{\tau_i} \rceilT_i$ |
 |-------------------|---------------------|----------------|--------------|--------------------------------------|-----------------------------------------|
 | displayUpdateTask | 100                 | 14.41          | 2            | 1                                    | 14.41                                   |
 | knobUpdateTask    | 50                  | 11.72          | 3            | 2                                    | 23.44                                   |
