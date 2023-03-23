@@ -180,14 +180,23 @@ These are used to calculate the sine function at each time instance. A static ti
 Worst runtime: 51.22 μs
 ISR execution time: 51220 μs
 
-## Knob Class
-### Description
 
 ## Other technical analysis
 
-### Rate monotonic scheduler (critical instant analysis)
+### Timing Analysis
 
-### Total CPU utilisation
+| Task              | Initiation Interval | Execution Time | RMS Priority | $lceil \frac{\tau_n}{\tau_i} \rceil$ | $lceil \frac{\tau_n}{\tau_i} \rceilT_i$ |
+|-------------------|---------------------|----------------|--------------|--------------------------------------|-----------------------------------------|
+| displayUpdateTask | 100                 | 14.41          | 2            | 1                                    | 14.41                                   |
+| knobUpdateTask    | 50                  | 11.72          | 3            | 2                                    | 23.44                                   |
+| handshakeTask     | 50                  | 46.28          | 1            | 2                                    | 92.56                                   |
+| decodeTask        | 25                  | 24.78          | 6            | 4                                    | 99.12                                   |
+| modeSwitchTask    | 50                  | 27.78          | 4            | 2                                    | 55.56                                   |
+| transmitTask      | 25                  | 110.09         | 7            | 4                                    | 440.36                                  |
+| sawtoothwaveISR   | 1/22                | 16.13          | -            | 2200                                 | 35486                                   |
+| sinewaveISR       | 1/10                | 51.22          | -            | 1000                                 | 51220                                   |
+| trianglewaveISR   | 1/22                | 15.72          | -            | 2200                                 | 34584                                   |
+|                   |                     |                |              | Total                                | 51945uS                                 |
 
 ## Sharing & security of data
 
