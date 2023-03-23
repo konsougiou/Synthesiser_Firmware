@@ -47,22 +47,30 @@ Each key was represented by one bit in the four least significant bits of three 
 A new message was sent only if a key change was detected (at least one pressed <-> unpressed transition).
 
 #### Time Performance
+Worst runtime: 110.09 μs 
+Minimum initiation interval: 0.2 ms
 
 ### Decode Thread
 #### Technical Overview
   This task reads the incoming messages from the Receiver. The incoming messages are one of two types. There are messages containing information about keys that have been pressed in other keyboards and there are messages that indicate the rotation of knobs on other keyboards. If the message contains information about keys, then this task will access the `currentStepSize` using a semaphore. Each keyspressed message contains information about the source keyboards octave, and based on this, either the first, middle or last 12 elements of the 36 `uint32_t` sized step sizes array will be populated. This allows the keyboard to play the correct notes at the correct octave. If the received message indicates a knob rotation, it will change the variables containing the current pitch, reverb setting and waveform mode based on changes happening on other keyboards. This happens in order to keep these three 
 settings consistent throughout all keyboards.
 #### Time Performance
+Worst runtime: 24.78 μs
+Minimum initiation interval: 0.2 ms 
 
 ### Display Thread
 #### Technical Overview
 This task handles the contents of what gets sent to the OLED display. In particular, it updates the connected display on the synth module with information about the current states/values of the volume, pitch, reverb and the type of wave that is being used (Sine, triangle or Sawtooth). It also has a small indicator that shows the relative position of the synth module compared to the other ones that it is connected to. It also outputs some of the relavant data recieved via CAN messages from other synth modules when a key is pressed/a knob has been rotated.
 #### Time Performance
+Worst runtime: 14.41 μs
+Minimum initiation interval: 0.8 ms
 
 ### Handshake Thread
 #### Technical Overview
 This task checks the `keyArray` to see whether there has been a detection of a keyboard to the right or the left. Based on this information, each keyboard knows whether it is in the middle, left or right on the keyboard and can infer its respective octave as well. 
 #### Time Performance
+Worst runtime: 46.28 μs
+Minimum initiation interval: 0.4 ms
 
 ### Knob Update Task
 #### Technical Overview
@@ -80,11 +88,15 @@ index | information
 7| -
 
 #### Time Performance
+Worst runtime: 11.72 μs
+Minimum initiation interval: 0.4 ms
 
 ### Mode Switch Task
 #### Technical Overview
 This task reads the current waveform mode that is set for all keyboards. This information is given by the Decode Task which reads the CAN messages for the knob states. Based on which waveform should be played, modeSwitch Task will schedule the correct ISR that playes the corresponding tone.
 #### Time Performance
+Worst runtime: 27.78 μs
+Minimum initiation interval: 0.4 ms
 
 ## CAN ISRs
 
@@ -92,12 +104,14 @@ This task reads the current waveform mode that is set for all keyboards. This in
 #### Technical Overview
 This ISR gets the message data using the `CAN_RX()` module and then places the data into the queue using `xQueueSendFromISR()`.	The ISR is called whenever a CAN message is received. 
 #### Time Performance
+Worst runtime: 0 μs
 
 ### canTX
 #### Technical Overview
 This task's sole duty is to obtain a message from the queue and take the semaphore before sending a message.
 `this is a TASK, not an ISR`
 #### Time Performance
+Worst runtime: 0.72 μs
 
 ### canTXisr 
 #### Technical Overview
