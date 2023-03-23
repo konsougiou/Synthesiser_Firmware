@@ -21,16 +21,21 @@ volatile uint32_t freqs [] = {2000, 5000, 10000, 17000, 22000, 28000, 30000, 400
 
 const uint32_t note_frequencies[12] = { 1617, 1713, 1815, 1923, 2037, 2158, 2286, 2422, 2566, 2719, 2880, 3051 };
 //double periods[12] = {0.00382021, 0.00360601, 0.00340382, 0.00321297, 0.00303282, 0.00286277, 0.00270226, 0.00255075, 0.00240773, 0.00227273, 0.0021453, 0.00202501}; 
-//------sinewave calculation parameters-------//
 
-//uint32_t amplifiedSineFunction[40] = { 128, 148, 167, 186, 203, 218, 231, 242, 249, 254, 255, 254, 249, 242, 231, 218, 203, 186, 167, 148, 128, 108, 88, 70, 52, 37, 24, 14, 6, 1, 0, 1, 6, 13, 24, 37, 52, 69, 88, 107 };
-
-//uint32_t indexScaling[12] = { 6, 5, 5, 5, 4, 4, 4, 4, 3, 3, 3, 3 };
-
-//--------------------------------------------//
 volatile uint8_t localOctave = 4;
 
 volatile uint32_t currentStepSize = 0;
+
+volatile uint32_t freqs [] = {2000, 5000, 10000, 17000, 22000, 28000, 30000, 40000, 50000};
+
+volatile uint32_t activeKeys[] = {0};
+volatile uint32_t currentStepSizes[12] = {0};
+
+// THIS IS CONST INSTEAD OF VOLATILE MIGHT CAUSE PROBLEMS???
+const char* globalKeySymbol = 0;
+
+
+
 
 volatile uint8_t keyArray[7];
 

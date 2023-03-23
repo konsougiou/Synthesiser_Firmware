@@ -26,13 +26,6 @@ extern volatile uint32_t freqs[];
 extern const uint32_t note_frequencies[12];
 extern double periods[12];
 
-//------sinewave calculation parameters-------//
-
-extern uint32_t amplifiedSineFunction[40];
-extern uint32_t indexScaling[12];
-
-//--------------------------------------------//
-
 extern volatile uint8_t localOctave;
 
 extern volatile uint32_t currentStepSize;
@@ -43,6 +36,7 @@ extern uint32_t prevStepSizes[36];
 extern volatile uint8_t keyArray[7];
 
 extern SemaphoreHandle_t keyArrayMutex;
+
 extern SemaphoreHandle_t queueReceiveMutex;
 extern SemaphoreHandle_t stepSizesMutex;
 extern SemaphoreHandle_t decodeStepSizesMutex;
@@ -106,3 +100,4 @@ extern const int HKOE_BIT;
 
 // Display driver object
 extern U8G2_SSD1305_128X32_NONAME_F_HW_I2C u8g2;
+

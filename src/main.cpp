@@ -1,4 +1,5 @@
 
+
 #include "globals.hpp"
 #include "tasks/tasks.hpp"
 #include "ISRs/ISRs.hpp"
@@ -41,8 +42,9 @@ void setup()
   knob2->setLimits(2, 0);
   knob1->setLimits(2, 0);
   knob0->setLimits(2,0);
-
+  
   // Set pin directions
+
   pinMode(RA0_PIN, OUTPUT);
   pinMode(RA1_PIN, OUTPUT);
   pinMode(RA2_PIN, OUTPUT);
@@ -77,6 +79,7 @@ void setup()
   trianglewaveSampleTimer->setOverflow(22000, HERTZ_FORMAT);
   trianglewaveSampleTimer->attachInterrupt(trianglewaveISR);
 
+
   sinewaveSampleTimer->setOverflow(10000, HERTZ_FORMAT);
   sinewaveSampleTimer->attachInterrupt(sinewaveISR);
 
@@ -92,6 +95,7 @@ void setup()
 
   TaskHandle_t displayUpdateHandle = NULL;
   xTaskCreate(
+
       displayUpdateTask,  /* Function that implements the task */
       "updateDisplay",    /* Text name for the task */
       256,                /* Stack size in words, not bytes */
