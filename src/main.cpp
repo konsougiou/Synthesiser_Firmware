@@ -85,7 +85,7 @@ void setup()
         "scanKeys",   /* Text name for the task */
         256,          /* Stack size in words, not bytes */
         NULL,         /* Parameter passed into the task */
-        2,            /* Task priority */
+        1,            /* Task priority */
         &transmitHandle);
 
     TaskHandle_t displayUpdateHandle = NULL;
@@ -95,7 +95,7 @@ void setup()
         "updateDisplay",   /* Text name for the task */
         256,               /* Stack size in words, not bytes */
         NULL,              /* Parameter passed into the task */
-        1,                 /* Task priority */
+        6,                 /* Task priority */
         &displayUpdateHandle);
 
     TaskHandle_t decodeTaskHandle = NULL;
@@ -113,7 +113,7 @@ void setup()
         "CAN_TX_Message", /* Text name for the task */
         256,              /* Stack size in words, not bytes */
         NULL,             /* Parameter passed into the task */
-        1,                /* Task priority */
+        7,                /* Task priority */
         &CAN_TX_TaskHandle);
 
     TaskHandle_t handshakeTaskHandle = NULL;
@@ -122,7 +122,7 @@ void setup()
         "decodeMessage", /* Text name for the task */
         256,             /* Stack size in words, not bytes */
         NULL,            /* Parameter passed into the task */
-        1,               /* Task priority */
+        3,               /* Task priority */
         &handshakeTaskHandle);
 
     TaskHandle_t knobUpdateTaskHandle = NULL;
@@ -131,7 +131,7 @@ void setup()
         "knobUpdate",   /* Text name for the task */
         128,            /* Stack size in words, not bytes */
         NULL,           /* Parameter passed into the task */
-        1,              /* Task priority */
+        5,              /* Task priority */
         &knobUpdateTaskHandle);
 
     TaskHandle_t modeSwitchTaskHandle = NULL;
@@ -140,7 +140,7 @@ void setup()
         "switchMode",   /* Text name for the task */
         128,            /* Stack size in words, not bytes */
         NULL,           /* Parameter passed into the task */
-        1,              /* Task priority */
+        4,              /* Task priority */
         &modeSwitchTaskHandle);
 
     // Create the mutex for each semaphore that will be used and assign its handle in the setup function
