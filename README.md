@@ -32,7 +32,7 @@ fot the sine wave (the sinewave ISR sampling rate was smaller and thus couldn't 
 
 ## How to measure Execution Time
 
-1. Switch to PERFORMANCE branch
+1. Switch to PERFORMANCE branch (https://github.com/konsougiou/Synthesiser_Firmware/tree/PERFORMANCE)
 2. Remove definition of #ifndef of task to be tested (e.g remove "#define DISABLE_DECODE_THREAD" to test the decodeTask)
 3. Flash code to synthesizer
 4. Go into serial monitor and press reset button
