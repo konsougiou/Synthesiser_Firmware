@@ -1,6 +1,5 @@
 
 #include "globals.hpp"
-//#include "knob.hpp"
 
 knob::knob(uint8_t number):  knobNumber(number){
     upperLimit = 8;

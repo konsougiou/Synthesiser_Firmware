@@ -155,10 +155,8 @@ void transmitTask(void *pvParameters)
 
     xSemaphoreGive(stepSizesMutex);
 
-    // if ((keyChanged || localKnob2Rotation != prevKnob2Rotation || localReverb != prevReverb) && !(westDetect == 1 && eastDetect == 1))
     if (((key_pressed || (key_pressed != keyPressedPrev)) && !(westDetect == 1 && eastDetect == 1)) || (westDetect != prevWestDetect && eastDetect != prevEastDetect))
     {
-      // TX_Message[0] = 80;
       xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
     }
 

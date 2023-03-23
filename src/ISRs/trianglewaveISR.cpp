@@ -79,9 +79,9 @@ void trianglewaveISR()
       { // Positive slope
         newPhaseAcc = phaseAccArray[z] + (currentStepSizes[z] << 1);
         if (newPhaseAcc < phaseAccArray[z])
-        {                                 // If we're about to overflow the uint32_t, then we switch slope direction downwards and continue
-          slopeSigns[z] = -1;             // Change the direction of the slope (to negative)
-          phaseAccArray[z] = newPhaseAcc; // 4294967295;        // is equal to 0xFFFFFFFF
+        {                     // If we're about to overflow the uint32_t, then we switch slope direction downwards and continue
+          slopeSigns[z] = -1; // Change the direction of the slope (to negative)
+          phaseAccArray[z] = newPhaseAcc;
         }
         else
         {
@@ -107,14 +107,14 @@ void trianglewaveISR()
     totalVout += Vout;
   }
 
+  // If volume is 8 and Key Counter >= 3 OR if volume is 7 and Key Counter >=4
+  // THEN correct the volume as such so we do not clip Vout
   if ((volume == 8 && keyCounter >= 3) || (volume == 7 && keyCounter >= 4))
   {
     volCorrector = 9;
-    // volCorrector = 1;
   }
-  totalVout = totalVout >> (volCorrector - volume);
 
-  // totalVout = totalVout >> (8 - volume);
+  totalVout = totalVout >> (volCorrector - volume);
   totalVout = min(255, (int)totalVout);
   totalVout = max(0, (int)totalVout);
 

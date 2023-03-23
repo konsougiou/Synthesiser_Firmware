@@ -17,7 +17,6 @@ const uint32_t step_scaling = pow(2, 32) / 22000;
 const uint32_t stepSizes[12] = {25534599, 27051354, 28658204, 30360502, 32163915, 34074452, 36098475, 38242724, 40514342, 42920894, 45470395, 48171336};
 
 const uint32_t note_frequencies[12] = {1617, 1713, 1815, 1923, 2037, 2158, 2286, 2422, 2566, 2719, 2880, 3051};
-// double periods[12] = {0.00382021, 0.00360601, 0.00340382, 0.00321297, 0.00303282, 0.00286277, 0.00270226, 0.00255075, 0.00240773, 0.00227273, 0.0021453, 0.00202501};
 
 volatile uint8_t localOctave = 4;
 
@@ -26,7 +25,6 @@ volatile uint32_t currentStepSize = 0;
 volatile uint32_t activeKeys[] = {0};
 uint32_t currentStepSizes[36] = {0};
 
-// THIS IS CONST INSTEAD OF VOLATILE MIGHT CAUSE PROBLEMS???
 const char *globalKeySymbol = 0;
 
 volatile uint8_t keyArray[7];
