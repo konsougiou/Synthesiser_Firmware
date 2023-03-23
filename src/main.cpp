@@ -44,6 +44,7 @@ CAN Format [8 bytes]  (For knob change):
 void setup()
 {
     // Following code is run once:
+    Serial.begin(9600);
 
     msgInQ = xQueueCreate(384, 8);
     msgOutQ = xQueueCreate(384, 8);
