@@ -14,6 +14,7 @@ HardwareTimer *trianglewaveSampleTimer = new HardwareTimer(Instance3);
 const uint32_t interval = 100; // Display update interval
 const double frequency_ratio = pow(2.0, 1.0 / 12.0);
 const uint32_t step_scaling = pow(2, 32) / 22000;
+bool middleKeyboardFound = false;
 
 const uint32_t stepSizes[12] = {25534599,27051354,28658204,30360502,32163915,34074452,36098475,38242724,40514342,42920894,45470395,48171336};
                               
@@ -61,7 +62,11 @@ uint8_t knob2Rotation = 0;
 
 uint8_t reverb = 0;
 
+uint8_t pitch = 0;
+
 uint8_t mode = 0;
+
+uint8_t volume = 0;
 
 uint32_t decayCounters[36] = {0};
 uint32_t internalCounters[36] = {0};

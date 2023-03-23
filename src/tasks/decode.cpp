@@ -17,7 +17,7 @@ void decodeTask(void *pvParameters)
   {
     // vTaskDelayUntil(&xLastWakeTime, xFrequency);
     
-    xQueueReceive(msgInQ, tempRX_Message, portMAX_DELAY);
+    // xQueueReceive(msgInQ, tempRX_Message, portMAX_DELAY);
 
     uint32_t localCurrentStepSizes[12] = {0};
 
@@ -30,6 +30,8 @@ void decodeTask(void *pvParameters)
 
     xSemaphoreGive(queueReceiveMutex);
     
+    
+
     localKnob2Rotation = __atomic_load_n(&knob2Rotation, __ATOMIC_RELAXED); 
     localMode = __atomic_load_n(&mode, __ATOMIC_RELAXED); 
 
@@ -94,5 +96,6 @@ void decodeTask(void *pvParameters)
       __atomic_store_n(&mode, tempMode, __ATOMIC_RELAXED);
       } 
     }
+    break;
   } 
 }

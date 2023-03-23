@@ -9,16 +9,16 @@ void modeSwitchTask(void *pvParameters){
   uint8_t localMode;
   uint8_t prevLocalMode;
 
- uint8_t prevMode = 0;
+  uint8_t prevMode = 0;
 
   while (1)
   {
-    vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    // vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
     // Sets the TX message field to store the reverb that was set locally
     localMode = __atomic_load_n(&mode, __ATOMIC_RELAXED); 
 
-    if(prevMode != localMode){
+    if(prevMode != localMode || 1){
         if (localMode == 2){ // Sine wave
             // We pause the timers for both sawtooth and sine to let triangle resume alone
             sawtoothwaveSampleTimer->pause();
@@ -66,5 +66,6 @@ void modeSwitchTask(void *pvParameters){
         }
     }
     prevMode = localMode;
+    break;
   }
 }

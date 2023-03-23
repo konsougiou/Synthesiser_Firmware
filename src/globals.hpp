@@ -16,6 +16,7 @@ extern HardwareTimer *sinewaveSampleTimer;
 
 extern TIM_TypeDef *Instance3;
 extern HardwareTimer *trianglewaveSampleTimer;
+extern bool middleKeyboardFound;
 
 extern const uint32_t interval; // Display update interval
 extern const double frequency_ratio;
@@ -65,6 +66,8 @@ extern uint8_t westDetect;
 extern uint8_t eastDetect;
 
 extern uint8_t reverb;
+extern uint8_t pitch;
+extern uint8_t volume;
 
 extern uint32_t decayCounters[36];
 extern uint32_t internalCounters[36];

@@ -16,5 +16,18 @@
 
   knobUpdate - 255
   handshake - 1493
-  sampleISR - 755
+  decode - 771
+  modeSwitch - 862
+  keyDetect - 3562
+  display - 444 (589792 w any u8g2 stuff, so had to remove em)
+  canTx - 5
+  
+
+  sawtoothwaveISR - 755
+  sinewaveISR - 836
+  trianglewaveISR - 839
+  canRXisr - 5
+  canTXisr - 5
+
+
 

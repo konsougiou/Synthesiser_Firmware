@@ -21,10 +21,14 @@ void transmitTask(void *pvParameters)
 
   uint32_t localCurrentStepSizes[12] = {0};
   uint32_t prevReverb = 2;
+  bool localMiddleKeyboardFound;
+
+  uint8_t prevWestDetect = 0;
+  uint8_t prevEastDetect = 0;
 
   while (1)
   {
-    vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    // vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
     uint32_t localCurrentStepSizes[12] = {0};
 
@@ -50,13 +54,13 @@ void transmitTask(void *pvParameters)
 
     xSemaphoreGive(keyArrayMutex);
 
-    uint8_t localKnob2Rotation = __atomic_load_n(&knob2Rotation, __ATOMIC_RELAXED);
+    uint8_t localPitch = __atomic_load_n(&pitch, __ATOMIC_RELAXED);
     uint8_t localReverb = __atomic_load_n(&reverb, __ATOMIC_RELAXED);
     uint8_t localMode = __atomic_load_n(&mode, __ATOMIC_RELAXED);
 
 
     uint32_t tmpCurrentStepSize = 0;
-    uint32_t stepScaling = freqs[knob2Rotation];
+    uint32_t stepScaling = freqs[pitch];
     
     bool key_pressed = false;
 
@@ -75,32 +79,33 @@ void transmitTask(void *pvParameters)
       uint8_t key1 = (keyGroup % 2);
       uint8_t keyOffset = i * 4;
       TX_Message[i + 1] = 0;
-      if (!key1)
+      if (1)
       {
-        localCurrentStepSizes[keyOffset] = localMode == 1? (note_frequencies[keyOffset] << (localOctave - 4 + localKnob2Rotation)) : stepSizes[keyOffset] << (localOctave - 4 + localKnob2Rotation);
+        localCurrentStepSizes[keyOffset] = localMode == 1? (note_frequencies[keyOffset] << (localOctave - 4 + localPitch)) : stepSizes[keyOffset] << (localOctave - 4 + localPitch);
         key_pressed = true;
         TX_Message[i + 1] += 1;
       }
-      if (!key2 )
+      if (1)
       {
-        localCurrentStepSizes[keyOffset + 1] = localMode == 1? (note_frequencies[keyOffset + 1] << (localOctave - 4 + localKnob2Rotation)): stepSizes[keyOffset + 1] << (localOctave - 4 + localKnob2Rotation); 
+        localCurrentStepSizes[keyOffset + 1] = localMode == 1? (note_frequencies[keyOffset + 1] << (localOctave - 4 + localPitch)): stepSizes[keyOffset + 1] << (localOctave - 4 + localPitch); 
         key_pressed = true;
         TX_Message[i + 1] += 2;
       }
-      if (!key3)
+      if (1)
       {
-        localCurrentStepSizes[keyOffset + 2] = localMode == 1? (note_frequencies[keyOffset + 2] << (localOctave - 4 + localKnob2Rotation)) : stepSizes[keyOffset + 2] << (localOctave - 4 + localKnob2Rotation);  
+
+        localCurrentStepSizes[keyOffset + 2] = localMode == 1? (note_frequencies[keyOffset + 2] << (localOctave - 4 + localPitch)) : stepSizes[keyOffset + 2] << (localOctave - 4 + localPitch);  
         key_pressed = true;
         TX_Message[i + 1] += 4;
       }
-      if (!key4)
+      if (1)
       {
-        localCurrentStepSizes[keyOffset + 3] = localMode == 1? (note_frequencies[keyOffset + 3] << (localOctave - 4 + localKnob2Rotation)): stepSizes[keyOffset + 3] << (localOctave - 4 + localKnob2Rotation); 
+        localCurrentStepSizes[keyOffset + 3] = localMode == 1? (note_frequencies[keyOffset + 3] << (localOctave - 4 + localPitch)): stepSizes[keyOffset + 3] << (localOctave - 4 + localPitch); 
         key_pressed = true;
         TX_Message[i + 1] += 8;
       }
     };
-
+    localMiddleKeyboardFound = __atomic_load_n(&middleKeyboardFound, __ATOMIC_RELAXED); 
     // Need to set the local octave as well. This would mean that the local step size would also have to be 
     // altered accordingly, preferably on-the-fly
     if ((westDetect == 0) && (eastDetect == 0)) // Centre
@@ -108,13 +113,20 @@ void transmitTask(void *pvParameters)
       TX_Message[4] = 5;
       tempLocalOctave = 5;
     }
-    else if ((westDetect == 0) && (eastDetect == 1)) // Right
+    else if ((westDetect == 0) && (eastDetect == 1) || 1) // Right
     {
-      TX_Message[4] = 5;
-      tempLocalOctave = 5;
+      if(middleKeyboardFound){
+        TX_Message[4] = 6;
+        tempLocalOctave = 6;
+      }
+      else{
+        TX_Message[4] = 5;
+        tempLocalOctave = 5; 
+      }
     }
     else if ((westDetect == 1) && (eastDetect == 0)) // Left
     {
+      
       TX_Message[4] = 4;
       tempLocalOctave = 4;
     }
@@ -127,29 +139,20 @@ void transmitTask(void *pvParameters)
     
     xSemaphoreTake(stepSizesMutex, portMAX_DELAY);
 
-    if (localMode == 1 && false)
-    {
-      for (uint8_t i = 0; i < 12; i++){ 
-        uint8_t idx = (12*(tempLocalOctave - 4)) + i;
-        currentStepSizes[idx] = localCurrentStepSizes[i];
-      } 
-    }
-    else{
-      for (uint8_t i = 0; i < 12; i++){ 
-        uint8_t idx = (12*(tempLocalOctave - 4)) + i;
-        currentStepSizes[idx] = localCurrentStepSizes[i]; 
-        if (localCurrentStepSizes[i] != 0){
-        prevStepSizes[idx] = localReverb ? localCurrentStepSizes[i] : 0;  
-        decayCounters[i] = 0; 
-        internalCounters[i] = 0;
-      }
+    for (uint8_t i = 0; i < 12; i++){ 
+      uint8_t idx = (12*(tempLocalOctave - 4)) + i;
+      currentStepSizes[idx] = localCurrentStepSizes[i]; 
+      if ((localCurrentStepSizes[i] != 0)){
+      prevStepSizes[idx] = localReverb ? localCurrentStepSizes[i] : 0;  
+      decayCounters[i] = 0; 
+      internalCounters[i] = 0;
       }
     }
 
     xSemaphoreGive(stepSizesMutex);
 
     // if ((keyChanged || localKnob2Rotation != prevKnob2Rotation || localReverb != prevReverb) && !(westDetect == 1 && eastDetect == 1))
-    if ((key_pressed || (key_pressed != keyPressedPrev)) && !(westDetect == 1 && eastDetect == 1))
+    if (((key_pressed || (key_pressed != keyPressedPrev)) && !(westDetect == 1 && eastDetect == 1)) || (westDetect != prevWestDetect && eastDetect != prevEastDetect) || 1)
     {
       // TX_Message[0] = 80;
       xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
@@ -157,19 +160,8 @@ void transmitTask(void *pvParameters)
 
     keyPressedPrev = key_pressed; 
     prevReverb = reverb;
- 
-    // For reverb knob
-    knob1->updateRotation(reverb);
-    
-    // For pitch knob
-    knob2->updateRotation(knob2Rotation); 
-
-    // For volume knob
-    knob3->updateRotation(knob3Rotation);
-
-    // For mode
-    knob0->updateRotation(mode);
-
-
+    prevWestDetect = westDetect;
+    prevEastDetect = eastDetect;
+    break;
   }
 }

@@ -59,7 +59,7 @@ void trianglewaveISR()
     }
     else{
       slopeSign = slopeSigns[z];
-      if(slopeSign == 1 ){                     // Positive slope
+      if(slopeSign == 1){                     // Positive slope
         newPhaseAcc = phaseAccArray[z] + (currentStepSizes[z] << 1);
         if (newPhaseAcc < phaseAccArray[z]) { // If we're about to overflow the uint32_t, then we switch slope direction downwards and continue
         slopeSigns[z] = -1;                   // Change the direction of the slope (to negative)
