@@ -12,7 +12,7 @@
 #define DISABLE_TRANSMIT_THREAD
 #define DISABLE_DISPLAY_THREAD
 #define DISABLE_DECODE_THREAD
-// #define DISABLE_CANTX_THREAD
+#define DISABLE_CANTX_THREAD
 #define DISABLE_HANDSHAKE_THREAD
 #define DISABLE_KNOB_UPDATE_THREAD
 #define DISABLE_MODESWITCH_THREAD
@@ -103,7 +103,7 @@ void setup()
         "scanKeys",   /* Text name for the task */
         256,          /* Stack size in words, not bytes */
         NULL,         /* Parameter passed into the task */
-        2,            /* Task priority */
+        7,            /* Task priority */
         &transmitHandle);
 #endif
 
@@ -115,7 +115,7 @@ void setup()
         "updateDisplay",   /* Text name for the task */
         256,               /* Stack size in words, not bytes */
         NULL,              /* Parameter passed into the task */
-        1,                 /* Task priority */
+        2,                 /* Task priority */
         &displayUpdateHandle);
 #endif
 
@@ -126,7 +126,7 @@ void setup()
         "decodeMessage", /* Text name for the task */
         256,             /* Stack size in words, not bytes */
         NULL,            /* Parameter passed into the task */
-        2,               /* Task priority */
+        6,               /* Task priority */
         &decodeTaskHandle);
 #endif
 
@@ -137,7 +137,7 @@ void setup()
         "CAN_TX_Message", /* Text name for the task */
         256,              /* Stack size in words, not bytes */
         NULL,             /* Parameter passed into the task */
-        1,                /* Task priority */
+        5,                /* Task priority */
         &CAN_TX_TaskHandle);
 #endif
 
@@ -159,7 +159,7 @@ void setup()
         "knobUpdate",   /* Text name for the task */
         128,            /* Stack size in words, not bytes */
         NULL,           /* Parameter passed into the task */
-        1,              /* Task priority */
+        3,              /* Task priority */
         &knobUpdateTaskHandle);
 #endif
 
@@ -170,7 +170,7 @@ void setup()
         "switchMode",   /* Text name for the task */
         128,            /* Stack size in words, not bytes */
         NULL,           /* Parameter passed into the task */
-        1,              /* Task priority */
+        4,              /* Task priority */
         &modeSwitchTaskHandle);
 #endif
 
