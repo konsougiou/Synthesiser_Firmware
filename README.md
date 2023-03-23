@@ -115,9 +115,9 @@ include a loop that iterates through all 36 keys.
 #### Technical Overview
 
 This ISR was activated when the waveform was set to sawtooth. It uses an array of size 36 (`uint32_t`)  to store the 
-phase accumulators for everyone note (12 * 3 for each keyboard). It added the `currentStepSize` corresponding to each note (if it was being pressed) to each accumulator which overflowed at a given rate, (based on the step size, i.e the note frequency) and thus produced a sawtooth waveform. 
+phase accumulators for every note (12 * 3 for each keyboard). It adds the `currentStepSize` corresponding to each note (if it was being pressed) to each accumulator which overflowed at a given rate, (based on the step size, i.e the note frequency) and thus produced a sawtooth waveform. 
 For the delay/reverb effect, the accumulator read the `previousStepSizes` array instead, and the ISR kept a timer of when the key was let go in order to output a slowly diminishing waveform.
-As mentioned above, slow operation were avoided inside this ISR, and especially in the loop that iterates over the 36 different notes (i.e current step sizes). For example, the modulo operator was performed using a binary AND, and was only done using powers of two (`x % 64 <=> x & (64 - 1)`).
+As mentioned above, slow operation were avoided inside this ISR, and especially in the loop that iterates over the 36 different notes (i.e current step sizes). For example, the modulo operator was performed using a binary AND, and was only done using powers of two (`x % (2^n) <=> x & (2^n - 1)`).
 
 #### Time Performance
 
