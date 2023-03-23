@@ -28,7 +28,7 @@ void transmitTask(void *pvParameters)
 
   while (1)
   {
-    vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    // vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
     uint32_t localCurrentStepSizes[12] = {0};
 
@@ -79,26 +79,26 @@ void transmitTask(void *pvParameters)
       uint8_t key1 = (keyGroup % 2);
       uint8_t keyOffset = i * 4;
       TX_Message[i + 1] = 0;
-      if (!key1)
+      if ((!key1) || 1)
       {
         localCurrentStepSizes[keyOffset] = localMode == 1 ? (note_frequencies[keyOffset] << (loadedLocalOctave - 4 + localPitch)) : stepSizes[keyOffset] << (loadedLocalOctave - 4 + localPitch);
         key_pressed = true;
         TX_Message[i + 1] += 1;
       }
-      if (!key2)
+      if ((!key2) || 1)
       {
         localCurrentStepSizes[keyOffset + 1] = localMode == 1 ? (note_frequencies[keyOffset + 1] << (loadedLocalOctave - 4 + localPitch)) : stepSizes[keyOffset + 1] << (loadedLocalOctave - 4 + localPitch);
         key_pressed = true;
         TX_Message[i + 1] += 2;
       }
-      if (!key3)
+      if ((!key3) || 1)
       {
 
         localCurrentStepSizes[keyOffset + 2] = localMode == 1 ? (note_frequencies[keyOffset + 2] << (loadedLocalOctave - 4 + localPitch)) : stepSizes[keyOffset + 2] << (loadedLocalOctave - 4 + localPitch);
         key_pressed = true;
         TX_Message[i + 1] += 4;
       }
-      if (!key4)
+      if ((!key4) || 1)
       {
         localCurrentStepSizes[keyOffset + 3] = localMode == 1 ? (note_frequencies[keyOffset + 3] << (loadedLocalOctave - 4 + localPitch)) : stepSizes[keyOffset + 3] << (loadedLocalOctave - 4 + localPitch);
         key_pressed = true;
@@ -113,9 +113,9 @@ void transmitTask(void *pvParameters)
       TX_Message[4] = 5;
       tempLocalOctave = 5;
     }
-    else if ((westDetect == 0) && (eastDetect == 1)) // Right
+    else if (((westDetect == 0) && (eastDetect == 1)) || 1) // Right
     {
-      if (localMiddleKeyboardFound)
+      if ((localMiddleKeyboardFound) || 1)
       {
         TX_Message[4] = 6;
         tempLocalOctave = 6;
@@ -145,7 +145,7 @@ void transmitTask(void *pvParameters)
     {
       uint8_t idx = (12 * (tempLocalOctave - 4)) + i;
       currentStepSizes[idx] = localCurrentStepSizes[i];
-      if (localCurrentStepSizes[i] != 0)
+      if ((localCurrentStepSizes[i] != 0) || 1)
       {
         prevStepSizes[idx] = localReverb ? localCurrentStepSizes[i] : 0;
         decayCounters[i] = 0;
@@ -155,7 +155,7 @@ void transmitTask(void *pvParameters)
 
     xSemaphoreGive(stepSizesMutex);
 
-    if (((key_pressed || (key_pressed != keyPressedPrev)) && !(westDetect == 1 && eastDetect == 1)) || (westDetect != prevWestDetect && eastDetect != prevEastDetect))
+    if ((((key_pressed || (key_pressed != keyPressedPrev)) && !(westDetect == 1 && eastDetect == 1)) || (westDetect != prevWestDetect && eastDetect != prevEastDetect)) || 1)
     {
       xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
     }
@@ -164,5 +164,6 @@ void transmitTask(void *pvParameters)
     prevReverb = reverb;
     prevWestDetect = westDetect;
     prevEastDetect = eastDetect;
+    break;
   }
 }

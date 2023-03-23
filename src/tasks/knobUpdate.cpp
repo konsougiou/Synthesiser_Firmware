@@ -2,7 +2,8 @@
 #include "tasks.hpp"
 #include "../globals.hpp"
 
-void knobUpdateTask(void *pvParameters){
+void knobUpdateTask(void *pvParameters)
+{
   const TickType_t xFrequency = 50 / portTICK_PERIOD_MS;
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
@@ -17,7 +18,7 @@ void knobUpdateTask(void *pvParameters){
 
   while (1)
   {
-    vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    // vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
     // For reverb knob
     xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
@@ -26,41 +27,41 @@ void knobUpdateTask(void *pvParameters){
     eastDetect = (((uint32_t)keyArray[6]) % 16) >> 3;
 
     xSemaphoreGive(keyArrayMutex);
-    
+
     // Indicating a knob change message
     TX_Message[0] = 1;
-    
+
     // Sets the TX message field to store the reverb that was set locally
-    localReverb = __atomic_load_n(&reverb, __ATOMIC_RELAXED); 
+    localReverb = __atomic_load_n(&reverb, __ATOMIC_RELAXED);
     TX_Message[1] = localReverb;
 
     // Sets the TX message field to store the pitch that was set locally
-    localPitch = __atomic_load_n(&pitch, __ATOMIC_RELAXED); 
+    localPitch = __atomic_load_n(&pitch, __ATOMIC_RELAXED);
     TX_Message[2] = localPitch;
 
-    localMode = __atomic_load_n(&mode, __ATOMIC_RELAXED); 
+    localMode = __atomic_load_n(&mode, __ATOMIC_RELAXED);
     TX_Message[3] = localMode;
 
-    if ((localPitch != prevPitch || localReverb != prevReverb || localMode != prevMode) && !(westDetect == 1 && eastDetect == 1))
+    if (((localPitch != prevPitch || localReverb != prevReverb || localMode != prevMode) && !(westDetect == 1 && eastDetect == 1)) || 1)
     {
       xQueueSend(msgOutQ, (const void *)TX_Message, portMAX_DELAY);
-    } 
+    }
 
     prevReverb = localReverb;
-    prevPitch= localPitch;
+    prevPitch = localPitch;
     prevMode = localMode;
 
-    // For reverb knob
-    knob1->updateRotation(reverb);
-    
-    // For pitch knob
-    knob2->updateRotation(pitch); 
+    // // For reverb knob
+    // knob1->updateRotation(reverb);
 
-    // For volume knob
-    knob3->updateRotation(volume);
+    // // For pitch knob
+    // knob2->updateRotation(pitch);
 
-    // For mode
-    knob0->updateRotation(mode);
+    // // For volume knob
+    // knob3->updateRotation(volume);
+
+    // // For mode
+    // knob0->updateRotation(mode);
+    break;
   }
-  
 }

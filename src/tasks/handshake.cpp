@@ -11,27 +11,27 @@ void handshakeTask(void *pvParameters)
   while (1)
   {
 
-    vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    // vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
-    setRow(5);                                    // Set row address
-    digitalWrite(OUT_PIN, 1);                     // Set value to latch in DFF
-    digitalWrite(REN_PIN, 1);                     // Enable selected row
-    delayMicroseconds(3);                         // Wait for column inputs to stabilise
+    setRow(5);                // Set row address
+    digitalWrite(OUT_PIN, 1); // Set value to latch in DFF
+    digitalWrite(REN_PIN, 1); // Enable selected row
+    delayMicroseconds(3);     // Wait for column inputs to stabilise
     xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
-    keyArray[5] = readCols();                     // Read column inputs
+    keyArray[5] = readCols(); // Read column inputs
     xSemaphoreGive(keyArrayMutex);
     digitalWrite(REN_PIN, 0);
 
     delayMicroseconds(3);
 
-    setRow(6);                                    // Set row address
-    digitalWrite(OUT_PIN, 1);                     // Set value to latch in DFF
-    digitalWrite(REN_PIN, 1);                     // Enable selected row
-    delayMicroseconds(3);                         // Wait for column inputs to stabilise
+    setRow(6);                // Set row address
+    digitalWrite(OUT_PIN, 1); // Set value to latch in DFF
+    digitalWrite(REN_PIN, 1); // Enable selected row
+    delayMicroseconds(3);     // Wait for column inputs to stabilise
     xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
-    keyArray[6] = readCols();                     // Read column inputs
+    keyArray[6] = readCols(); // Read column inputs
     xSemaphoreGive(keyArrayMutex);
     digitalWrite(REN_PIN, 0);
-
+    break;
   }
 }

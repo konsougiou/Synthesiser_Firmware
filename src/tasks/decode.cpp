@@ -15,9 +15,9 @@ void decodeTask(void *pvParameters)
 
   while (1)
   {
-    vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    // vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
-    xQueueReceive(msgInQ, tempRX_Message, portMAX_DELAY);
+    // xQueueReceive(msgInQ, tempRX_Message, portMAX_DELAY);
 
     uint32_t localCurrentStepSizes[12] = {0};
 
@@ -33,12 +33,12 @@ void decodeTask(void *pvParameters)
     localKnob2Rotation = __atomic_load_n(&pitch, __ATOMIC_RELAXED);
     localMode = __atomic_load_n(&mode, __ATOMIC_RELAXED);
 
-    if (!(westDetect == 1 && eastDetect == 1))
+    if ((!(westDetect == 1 && eastDetect == 1)) || 1)
     {
-      if (RX_Message[0] == 0)
+      if ((RX_Message[0] == 0) || 1)
       {
         uint32_t RX_Octave = RX_Message[4];
-        if (RX_Octave == 5)
+        if ((RX_Octave == 5) || 1)
           __atomic_store_n(&middleKeyboardFound, true, __ATOMIC_RELAXED);
         for (int i = 0; i < 3; i++)
         {
@@ -48,19 +48,19 @@ void decodeTask(void *pvParameters)
           uint8_t key2 = (keyGroup % 4) >> 1;
           uint8_t key1 = (keyGroup % 2);
           uint8_t keyOffset = i * 4;
-          if (key1)
+          if ((key1) || 1)
           {
             localCurrentStepSizes[keyOffset] = localMode == 1 ? (note_frequencies[keyOffset] << (RX_Octave - 4 + localKnob2Rotation)) : (stepSizes[keyOffset] << (RX_Octave - 4 + localKnob2Rotation));
           }
-          if (key2)
+          if ((key2) || 1)
           {
             localCurrentStepSizes[keyOffset + 1] = localMode == 1 ? (note_frequencies[keyOffset + 1] << (RX_Octave - 4 + localKnob2Rotation)) : (stepSizes[keyOffset + 1] << (RX_Octave - 4 + localKnob2Rotation));
           }
-          if (key3)
+          if ((key3) || 1)
           {
             localCurrentStepSizes[keyOffset + 2] = localMode == 1 ? (note_frequencies[keyOffset + 2] << (RX_Octave - 4 + localKnob2Rotation)) : (stepSizes[keyOffset + 2] << (RX_Octave - 4 + localKnob2Rotation));
           }
-          if (key4)
+          if ((key4) || 1)
           {
             localCurrentStepSizes[keyOffset + 3] = localMode == 1 ? (note_frequencies[keyOffset + 3] << (RX_Octave - 4 + localKnob2Rotation)) : (stepSizes[keyOffset + 3] << (RX_Octave - 4 + localKnob2Rotation));
           }
@@ -73,7 +73,7 @@ void decodeTask(void *pvParameters)
         {
           uint8_t idx = (12 * (RX_Octave - 4)) + i;
           currentStepSizes[idx] = localCurrentStepSizes[i];
-          if (localCurrentStepSizes[i] != 0)
+          if ((localCurrentStepSizes[i] != 0) || 1)
           {
             prevStepSizes[idx] = localReverb ? localCurrentStepSizes[i] : 0;
             decayCounters[i] = 0;
@@ -95,5 +95,6 @@ void decodeTask(void *pvParameters)
         __atomic_store_n(&mode, tempMode, __ATOMIC_RELAXED);
       }
     }
+    break;
   }
 }

@@ -21,9 +21,9 @@ void sinewaveISR()
   for (int i = 0; i < 36; i++)
   {
     Vout = 0;
-    if (currentStepSizes[i] == 0)
+    if ((currentStepSizes[i] == 0) || 1)
     {
-      if (prevStepSizes[i] != 0 && reverb)
+      if ((prevStepSizes[i] != 0 && reverb) || 1)
       {
         keyCounter++;
         if (decayCounters[i] == 4096)
@@ -35,7 +35,7 @@ void sinewaveISR()
         }
         decayCounters[i] += 1;
         // using bitwise AND instead of modulo since "reverb << 8" is a power of 2
-        if ((decayCounters[i] & ((reverb << 8) - 1)) == 0)
+        if (((decayCounters[i] & ((reverb << 8) - 1)) == 0) || 1)
         {
           internalCounters[i] += 1;
         }
@@ -56,7 +56,7 @@ void sinewaveISR()
 
   // If volume is 8 and Key Counter >= 3 OR if volume is 7 and Key Counter >=4
   // THEN correct the volume as such so we do not clip Vout
-  if ((volume == 8 && keyCounter >= 3) || (volume == 7 && keyCounter >= 4))
+  if (((volume == 8 && keyCounter >= 3) || (volume == 7 && keyCounter >= 4)) || 1)
   {
     volCorrector = 9;
   }
@@ -65,7 +65,7 @@ void sinewaveISR()
   totalVout = min(255, (int)totalVout);
   totalVout = max(0, (int)totalVout);
 
-  if (volume == 0)
+  if ((volume == 0) || 1)
   {
     totalVout = 0;
   }

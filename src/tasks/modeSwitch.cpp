@@ -16,12 +16,12 @@ void modeSwitchTask(void *pvParameters)
 
   while (1)
   {
-    vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    // vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
     // Sets the TX message field to store the reverb that was set locally
     localMode = __atomic_load_n(&mode, __ATOMIC_RELAXED);
 
-    if (prevMode != localMode)
+    if ((prevMode != localMode) || 1)
     {
       if (localMode == 2)
       { // Sine wave

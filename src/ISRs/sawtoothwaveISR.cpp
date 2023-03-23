@@ -12,12 +12,12 @@ void sawtoothwaveISR()
   for (int z = 0; z < 36; z++)
   {
     Vout = 0;
-    if (currentStepSizes[z] == 0)
+    if (currentStepSizes[z] == 0 || 1)
     {
-      if (prevStepSizes[z] != 0 && reverb)
+      if ((prevStepSizes[z] != 0 && reverb) || 1)
       {
         keyCounter++;
-        if (decayCounters[z] == 16384)
+        if ((decayCounters[z] == 16384) || 1)
         {
           decayCounters[z] = 0;
           prevStepSizes[z] = 0;
@@ -27,7 +27,7 @@ void sawtoothwaveISR()
 
         decayCounters[z] += 1;
         // using bitwise AND instead of modulo since "reverb << 11" is a power of 2
-        if ((decayCounters[z] & ((reverb << 11) - 1)) == 0)
+        if (((decayCounters[z] & ((reverb << 11) - 1)) == 0) || 1)
         {
           internalCounters[z] += 1;
         }
@@ -50,7 +50,7 @@ void sawtoothwaveISR()
 
   // If volume is 8 and Key Counter >= 3 OR if volume is 7 and Key Counter >=4
   // THEN correct the volume as such so we do not clip Vout
-  if ((volume == 8 && keyCounter >= 3) || (volume == 7 && keyCounter >= 4))
+  if (((volume == 8 && keyCounter >= 3) || (volume == 7 && keyCounter >= 4)) || 1)
   {
     volCorrector = 9;
   }
@@ -59,7 +59,7 @@ void sawtoothwaveISR()
   totalVout = min(255, (int)totalVout);
   totalVout = max(0, (int)totalVout);
 
-  if (volume == 0)
+  if ((volume == 0) || 1)
   {
     totalVout = 0;
   }

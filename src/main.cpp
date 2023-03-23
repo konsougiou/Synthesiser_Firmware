@@ -4,7 +4,18 @@
 #include "tasks/tasks.hpp"
 #include "ISRs/ISRs.hpp"
 #include "utils/utils.hpp"
-// #include "knob.hpp"
+
+// UNCOMMENT definitions below to disable tasks from being measured for their execution time.
+#define DISABLE_ISR_SAWTOOTH
+#define DISABLE_ISR_TRIANGLE
+#define DISABLE_ISR_SINE
+#define DISABLE_TRANSMIT_THREAD
+#define DISABLE_DISPLAY_THREAD
+#define DISABLE_DECODE_THREAD
+// #define DISABLE_CANTX_THREAD
+#define DISABLE_HANDSHAKE_THREAD
+#define DISABLE_KNOB_UPDATE_THREAD
+#define DISABLE_MODESWITCH_THREAD
 
 /*
 CAN Format [8 bytes] (For key press):
@@ -34,8 +45,8 @@ void setup()
 {
     // Following code is run once:
 
-    msgInQ = xQueueCreate(36, 8);
-    msgOutQ = xQueueCreate(36, 8);
+    msgInQ = xQueueCreate(384, 8);
+    msgOutQ = xQueueCreate(384, 8);
 
     // Set limits for each knob independently
     knob3->setLimits(8, 0);
@@ -68,17 +79,23 @@ void setup()
     u8g2.begin();
     setOutMuxBit(DEN_BIT, HIGH); // Enable display power supply
 
-    // Initialise UART
+#ifndef DISABLE_ISR_SAWTOOTH
     sawtoothwaveSampleTimer->setOverflow(22000, HERTZ_FORMAT);
     sawtoothwaveSampleTimer->attachInterrupt(sawtoothwaveISR);
     sawtoothwaveSampleTimer->resume();
+#endif
 
+#ifndef DISABLE_ISR_TRIANGLE
     trianglewaveSampleTimer->setOverflow(22000, HERTZ_FORMAT);
     trianglewaveSampleTimer->attachInterrupt(trianglewaveISR);
+#endif
 
+#ifndef DISABLE_ISR_SINE
     sinewaveSampleTimer->setOverflow(10000, HERTZ_FORMAT);
     sinewaveSampleTimer->attachInterrupt(sinewaveISR);
+#endif
 
+#ifndef DISABLE_TRANSMIT_THREAD
     TaskHandle_t transmitHandle = NULL;
     xTaskCreate(
         transmitTask, /* Function that implements the task */
@@ -87,7 +104,9 @@ void setup()
         NULL,         /* Parameter passed into the task */
         2,            /* Task priority */
         &transmitHandle);
+#endif
 
+#ifndef DISABLE_DISPLAY_THREAD
     TaskHandle_t displayUpdateHandle = NULL;
     xTaskCreate(
 
@@ -97,7 +116,9 @@ void setup()
         NULL,              /* Parameter passed into the task */
         1,                 /* Task priority */
         &displayUpdateHandle);
+#endif
 
+#ifndef DISABLE_DECODE_THREAD
     TaskHandle_t decodeTaskHandle = NULL;
     xTaskCreate(
         decodeTask,      /* Function that implements the task */
@@ -106,7 +127,9 @@ void setup()
         NULL,            /* Parameter passed into the task */
         2,               /* Task priority */
         &decodeTaskHandle);
+#endif
 
+#ifndef DISABLE_CANTX_THREAD
     TaskHandle_t CAN_TX_TaskHandle = NULL;
     xTaskCreate(
         CAN_TX_Task,      /* Function that implements the task */
@@ -115,7 +138,9 @@ void setup()
         NULL,             /* Parameter passed into the task */
         1,                /* Task priority */
         &CAN_TX_TaskHandle);
+#endif
 
+#ifndef DISABLE_HANDSHAKE_THREAD
     TaskHandle_t handshakeTaskHandle = NULL;
     xTaskCreate(
         handshakeTask,   /* Function that implements the task */
@@ -124,7 +149,9 @@ void setup()
         NULL,            /* Parameter passed into the task */
         1,               /* Task priority */
         &handshakeTaskHandle);
+#endif
 
+#ifndef DISABLE_KNOB_UPDATE_THREAD
     TaskHandle_t knobUpdateTaskHandle = NULL;
     xTaskCreate(
         knobUpdateTask, /* Function that implements the task */
@@ -133,7 +160,9 @@ void setup()
         NULL,           /* Parameter passed into the task */
         1,              /* Task priority */
         &knobUpdateTaskHandle);
+#endif
 
+#ifndef DISABLE_MODESWITCH_THREAD
     TaskHandle_t modeSwitchTaskHandle = NULL;
     xTaskCreate(
         modeSwitchTask, /* Function that implements the task */
@@ -142,6 +171,7 @@ void setup()
         NULL,           /* Parameter passed into the task */
         1,              /* Task priority */
         &modeSwitchTaskHandle);
+#endif
 
     // Create the mutex for each semaphore that will be used and assign its handle in the setup function
     keyArrayMutex = xSemaphoreCreateMutex();
@@ -157,7 +187,127 @@ void setup()
     CAN_RegisterTX_ISR(CAN_TX_ISR);
     CAN_Start();
 
-    vTaskStartScheduler();
+    // vTaskStartScheduler();
+
+#ifndef DISABLE_ISR_SAWTOOTH
+    uint32_t startTime = micros();
+    for (int iter = 0; iter < 32; iter++)
+    {
+        sawtoothwaveISR();
+    }
+    Serial.print("sawtoothwaveISR exec time: ");
+    Serial.println(micros() - startTime);
+    while (1)
+        ;
+#endif
+
+#ifndef DISABLE_ISR_TRIANGLE
+    uint32_t startTime = micros();
+    for (int iter = 0; iter < 32; iter++)
+    {
+        trianglewaveISR();
+    }
+    Serial.print("trianglewaveISR exec time: ");
+    Serial.println(micros() - startTime);
+    while (1)
+        ;
+#endif
+
+#ifndef DISABLE_ISR_SINE
+    uint32_t startTime = micros();
+    for (int iter = 0; iter < 32; iter++)
+    {
+        sinewaveISR();
+    }
+    Serial.print("sinewaveISR exec time: ");
+    Serial.println(micros() - startTime);
+    while (1)
+        ;
+#endif
+
+#ifndef DISABLE_TRANSMIT_THREAD
+    uint32_t startTime = micros();
+    for (int iter = 0; iter < 32; iter++)
+    {
+        transmitTask(NULL);
+    }
+    Serial.print("transmitTask exec time: ");
+    Serial.println(micros() - startTime);
+    while (1)
+        ;
+#endif
+
+#ifndef DISABLE_DISPLAY_THREAD
+    uint32_t startTime = micros();
+    for (int iter = 0; iter < 32; iter++)
+    {
+        displayUpdateTask(NULL);
+    }
+    Serial.print("displayUpdateTask exec time: ");
+    Serial.println(micros() - startTime);
+    while (1)
+        ;
+#endif
+
+#ifndef DISABLE_DECODE_THREAD
+    uint32_t startTime = micros();
+    for (int iter = 0; iter < 32; iter++)
+    {
+        decodeTask(NULL);
+    }
+    Serial.print("decodeTask exec time: ");
+    Serial.println(micros() - startTime);
+    while (1)
+        ;
+#endif
+
+#ifndef DISABLE_CANTX_THREAD
+    uint32_t startTime = micros();
+    for (int iter = 0; iter < 32; iter++)
+    {
+        CAN_TX_Task(NULL);
+    }
+    Serial.print("CAN_TX_Task exec time: ");
+    Serial.println(micros() - startTime);
+    while (1)
+        ;
+#endif
+
+#ifndef DISABLE_HANDSHAKE_THREAD
+    uint32_t startTime = micros();
+    for (int iter = 0; iter < 32; iter++)
+    {
+        handshakeTask(NULL);
+    }
+    Serial.print("handshakeTask exec time: ");
+    Serial.println(micros() - startTime);
+    while (1)
+        ;
+#endif
+
+#ifndef DISABLE_KNOB_UPDATE_THREAD
+    uint32_t startTime = micros();
+    for (int iter = 0; iter < 32; iter++)
+    {
+        knobUpdateTask(NULL);
+    }
+    Serial.print("knobUpdateTask exec time: ");
+    Serial.println(micros() - startTime);
+    while (1)
+        ;
+#endif
+
+#ifndef DISABLE_MODESWITCH_THREAD
+    uint32_t startTime = micros();
+    for (int iter = 0; iter < 32; iter++)
+    {
+        modeSwitchTask(NULL);
+    }
+    Serial.print("modeSwitchTask exec time: ");
+    Serial.println(micros() - startTime);
+    while (1)
+        ;
+#endif
 }
 
 void loop()
