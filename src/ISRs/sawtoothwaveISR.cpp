@@ -36,12 +36,12 @@ void sawtoothwaveISR()
       }
       else
       {
-        keyCounter++;
         phaseAccArray[z] = 0;
       }
     }
     else
     {
+      keyCounter++;
       phaseAccArray[z] += currentStepSizes[z];
       Vout = (phaseAccArray[z] >> 24);
     }

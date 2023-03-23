@@ -72,8 +72,7 @@ void modeSwitchTask(void *pvParameters)
         localPitch = __atomic_load_n(&pitch, __ATOMIC_RELAXED);
         if (localPitch == 2)
         {
-          localPitch = 1;
-          __atomic_store_n(&pitch, localPitch, __ATOMIC_RELAXED);
+          __atomic_store_n(&pitch, 1, __ATOMIC_RELAXED);
         }
 
         knob2->setLimits(1, 0);

@@ -68,12 +68,12 @@ void trianglewaveISR()
       }
       else
       {
-        keyCounter++;
         phaseAccArray[z] = 0;
       }
     }
     else
     {
+      keyCounter++;
       slopeSign = slopeSigns[z];
       if (slopeSign == 1)
       { // Positive slope
