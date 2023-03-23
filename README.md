@@ -185,7 +185,7 @@ ISR execution time: 51220 μs
 
 ### Timing Analysis
 
-| Task              | Initiation Interval | Execution Time | RMS Priority | $\lceil \frac{\tau_n}{\tau_i} \rceil$ | $\lceil \frac{\tau_n}{\tau_i} \rceilT_i$ |
+| Task              | Initiation Interval | Execution Time | RMS Priority | $\lceil \frac{\tau_n}{\tau_i} \rceil$ | $\lceil \frac{\tau_n}{\tau_i} \rceil {T_i}$ |
 |-------------------|---------------------|----------------|--------------|--------------------------------------|-----------------------------------------|
 | displayUpdateTask | 100                 | 14.41          | 2            | 1                                    | 14.41                                   |
 | knobUpdateTask    | 50                  | 11.72          | 3            | 2                                    | 23.44                                   |
@@ -196,7 +196,7 @@ ISR execution time: 51220 μs
 | sawtoothwaveISR   | 1/22                | 16.13          | -            | 2200                                 | 35486                                   |
 | sinewaveISR       | 1/10                | 51.22          | -            | 1000                                 | 51220                                   |
 | trianglewaveISR   | 1/22                | 15.72          | -            | 2200                                 | 34584                                   |
-|                   |                     |                |              | Total                                | 51945uS                                 |
+|                   |                     |                |              | Total                                | 51945μs                                 |
 
 ## Sharing & security of data
 
