@@ -5,7 +5,7 @@ class knob{
     public:
         knob(uint8_t number);
 
-        void updateRotation(uint8_t& knobRotation);
+        void updateRotation(volatile uint8_t& knobRotation);
 
         void setLimits(uint8_t upper, uint8_t lower);
 

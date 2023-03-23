@@ -1,6 +1,5 @@
 
 #include "globals.hpp"
-//#include "knob.hpp"
 
 knob::knob(uint8_t number):  knobNumber(number){
     upperLimit = 8;
@@ -9,7 +8,7 @@ knob::knob(uint8_t number):  knobNumber(number){
     keyArrayIdx = 4 - (number / 2);
 }
  
-void knob::updateRotation(uint8_t& knobRotation){
+void knob::updateRotation(volatile uint8_t& knobRotation){
   xSemaphoreTake(keyArrayMutex, portMAX_DELAY);
 
   uint8_t knobCols = keyArray[keyArrayIdx];
