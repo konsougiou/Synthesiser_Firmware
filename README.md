@@ -13,6 +13,11 @@
   [Handshaking and auto-detection](doc/handshaking.md)
   
   [Double buffering of audio samples](doc/doubleBuffer.md)
+
+### Video Demo
+
+The video shows core features, reverb, polyphony, pitch control, and triangle and sine waves as well:\
+https://youtu.be/pA1DBCMQ2Lw
   
 ## General non-technical description
 
@@ -175,17 +180,16 @@ Worst runtime: 51.22 μs
 
 | Task              | Initiation Interval | Execution Time | RMS Priority | $\lceil \frac{\tau_n}{\tau_i} \rceil$ | $\lceil \frac{\tau_n}{\tau_i} \rceil {T_i}$ | $\frac{T_i}{\tau_i}$ |
 |-------------------|---------------------|----------------|--------------|--------------------------------------|-----------------------------------------|------------|
-| displayUpdateTask | 100                 | 14.41          | 2            | 1                                    | 14.41                                   | 0.1441           |
-| knobUpdateTask    | 50                  | 11.72          | 3            | 2                                    | 23.44                                   | 0.2344           |
-| handshakeTask     | 50                  | 46.28          | 1            | 2                                    | 92.56                                   | 0.9256           |
-| decodeTask        | 25                  | 24.78          | 6            | 4                                    | 99.12                                   | 0.9912           |
-| modeSwitchTask    | 50                  | 27.78          | 4            | 2                                    | 55.56                                   | 0.5556           |
-| transmitTask      | 25                  | 110.09         | 7            | 4                                    | 440.36                                  | 4.4036           |
-| sawtoothwaveISR   | 1/22                | 16.13          | -            | 2200                                 | 35486                                   | 354.86           |
-| sinewaveISR       | 1/10                | 51.22          | -            | 1000                                 | 51220                                   | 512.20           |
-| trianglewaveISR   | 1/22                | 15.72          | -            | 2200                                 | 34584                                   | 345.84           |
-|                   |                     |                |              | Total                                | 51945μs                                 | 0.51945          |
-                               |
+| displayUpdateTask | 100                 | 14.41          | 2            | 1                                    | 14.41                                   | 0.1441%           |
+| knobUpdateTask    | 50                  | 11.72          | 3            | 2                                    | 23.44                                   | 0.2344%           |
+| handshakeTask     | 50                  | 46.28          | 1            | 2                                    | 92.56                                   | 0.9256%           |
+| decodeTask        | 25                  | 24.78          | 6            | 4                                    | 99.12                                   | 0.9912%           |
+| modeSwitchTask    | 50                  | 27.78          | 4            | 2                                    | 55.56                                   | 0.5556%           |
+| transmitTask      | 25                  | 110.09         | 7            | 4                                    | 440.36                                  | 4.4036%           |
+| sawtoothwaveISR   | 1/22                | 16.13          | -            | 2200                                 | 35486                                   | -           |
+| sinewaveISR       | 1/10                | 51.22          | -            | 1000                                 | 51220                                   | -           |
+| trianglewaveISR   | 1/22                | 15.72          | -            | 2200                                 | 34584                                   | -           |
+|                   |                     |                |              | Total                                | 51945μs                                 | 0.51945%          |
 
 ## Sharing & security of data
 
@@ -205,36 +209,43 @@ uint32_t interval; // Display update interval
 
 bool pressOrReceive; // False == Receive, True == Press
 
-QueueHandle_t msgInQ;
+QueueHandle_t msgInQ;\
 QueueHandle_t msgOutQ;
 
-uint8_t volume;
-uint8_t pitch;
-uint8_t mode;
-uint8_t reverb;
-uint8_t westDetect;
-uint8_t eastDetect;
-uint8_t localOctave;
+uint8_t volume;\
+uint8_t pitch;\
+uint8_t mode;\
+uint8_t reverb;\
+uint8_t westDetect;\
+uint8_t eastDetect;\
+uint8_t localOctave;\
 bool middleKeyboardFound;
 
-uint32_t decayCounters[36];
-uint32_t internalCounters[36];
-uint32_t stepSizes[12];
-uint32_t note_frequencies[12];
-double periods[12];
-uint32_t currentStepSizes[36];
-uint32_t prevStepSizes[36];
-uint8_t keyArray[7];
+\
+uint8_t RX_Message[8];\
+\
+SemaphoreHandle_t keyArrayMutex:\
+  uint8_t keyArray[7];
 
-uint8_t RX_Message[8];
-uint8_t TX_Message[8];
+SemaphoreHandle_t stepSizesMutex:\
+  uint32_t currentStepSizes[36];\
+  uint32_t prevStepSizes[36];\
+  uint32_t decayCounters[36];\
+  uint32_t internalCounters[36];\
+  uint32_t stepSizes[12];
 
-SemaphoreHandle_t keyArrayMutex;
 
-SemaphoreHandle_t queueReceiveMutex;
-SemaphoreHandle_t stepSizesMutex;
+SemaphoreHandle_t queueReceiveMutex:\
+  uint8_t RX_Message[8];
+
+
+SemaphoreHandle_t stepSizesMutex;\
 SemaphoreHandle_t decodeStepSizesMutex;
 
-SemaphoreHandle_t CAN_TX_Semaphore;
+SemaphoreHandle_t CAN_TX_Semaphore:\
+  Counting semaphore that allowed up to three owners. Given by CAN_TX_ISR when a mailbox becomes
+  available, and taken by CAN_TX_Task right before transmission.
 
-### Data access analysis & assessment of deadlock possibility
+
+
+
