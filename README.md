@@ -57,8 +57,7 @@ A new message was sent only if a key change was detected (at least one pressed <
 
 #### Time Performance
 Worst runtime: 110.09 μs \
-Minimum initiation interval: 0.2 ms\
-Task execution time: 440.36 μs
+Minimum initiation interval: 0.2 ms
 
 ### Decode Thread
 #### Technical Overview
@@ -66,24 +65,21 @@ Task execution time: 440.36 μs
 settings consistent throughout all keyboards.
 #### Time Performance
 Worst runtime: 24.78 μs\
-Minimum initiation interval: 0.2 ms\
-Task execution time: 99.12 μs
+Minimum initiation interval: 0.2 ms
 
 ### Display Thread
 #### Technical Overview
 This task handles the contents of what gets sent to the OLED display. In particular, it updates the connected display on the synth module with information about the current states/values of the volume, pitch, reverb and the type of wave that is being used (Sine, triangle or Sawtooth). It also has a small indicator that shows the relative position of the synth module compared to the other ones that it is connected to. It also outputs some of the relavant data recieved via CAN messages from other synth modules when a key is pressed/a knob has been rotated.
 #### Time Performance
 Worst runtime: 14.41 μs\
-Minimum initiation interval: 0.8 ms\
-Task execution time: 14.41 μs
+Minimum initiation interval: 0.8 ms
 
 ### Handshake Thread
 #### Technical Overview
 This task checks the `keyArray` to see whether there has been a detection of a keyboard to the right or the left. Based on this information, each keyboard knows whether it is in the middle, left or right on the keyboard and can infer its respective octave as well. 
 #### Time Performance
 Worst runtime: 46.28 μs\
-Minimum initiation interval: 0.4 ms\
-Task execution time: 92.56 μs
+Minimum initiation interval: 0.4 ms
 
 ### Knob Update Task
 #### Technical Overview
@@ -102,16 +98,14 @@ index | information
 
 #### Time Performance
 Worst runtime: 11.72 μs\
-Minimum initiation interval: 0.4 ms\
-Task execution time: 23.44 μs
+Minimum initiation interval: 0.4 ms
 
 ### Mode Switch Task
 #### Technical Overview
 This task reads the current waveform mode that is set for all keyboards. This information is given by the Decode Task which reads the CAN messages for the knob states. Based on which waveform should be played, modeSwitch Task will schedule the correct ISR that playes the corresponding tone.
 #### Time Performance
 Worst runtime: 27.78 μs\
-Minimum initiation interval: 0.4 ms\
-Task execution time: 55.56 μs
+Minimum initiation interval: 0.4 ms
 
 ## CAN ISRs
 
@@ -155,8 +149,7 @@ For the delay/reverb effect, the accumulator read the `previousStepSizes` array 
 As mentioned above, slow operation were avoided inside this ISR, and especially in the loop that iterates over the 36 different notes (i.e current step sizes). For example, the modulo operator was performed using a binary AND, and was only done using powers of two (`x % (2^n) <=> x & (2^n - 1)`).
 
 #### Time Performance
-Worst runtime: 16.13 μs\
-ISR execution time: 35486 μs 
+Worst runtime: 16.13 μs
 
 
 ### trianglewaveISR
@@ -168,8 +161,7 @@ Firstly, a state was kept for each of the notes (using a 36 `uint32_t` array) wh
 the transition from 0 to 255 had to happen twice as fast (since it also had to go back to 0 in a period).
 
 #### Time Performance
-Worst runtime: 15.72 μs\
-ISR execution time: 34584 μs
+Worst runtime: 15.72 μs
 
 ### sinewaveISR
 #### Technical Overview
@@ -177,23 +169,23 @@ This ISR was activated when the waveform was set to sine wave. This interrupt op
 These are used to calculate the sine function at each time instance. A static timer was thus used, which was incremented in each call of the interrupt by 0.1 ms (1 over the frequency with which it was called). Initially, both the `"cmath"` `std::sin()` function and a lookup table were tested. The former was too slow to support polyphony, and the latter produced lower quality sound. The implementation that was found to have a good balance of performance and quality was the `"arm_math.h"` library `arm_sin_f32()` function which effectivly utilizes the FPU found in the Arm Cortex-M4 core. This proved performant enough to support both polyphony and delay, as well as smooth output.
 
 #### Time Performance
-Worst runtime: 51.22 μs\
-ISR execution time: 51220 μs
+Worst runtime: 51.22 μs
 
 ### Timing Analysis
 
-| Task              | Initiation Interval | Execution Time | RMS Priority | $\lceil \frac{\tau_n}{\tau_i} \rceil$ | $\lceil \frac{\tau_n}{\tau_i} \rceil {T_i}$ |
-|-------------------|---------------------|----------------|--------------|--------------------------------------|-----------------------------------------|
-| displayUpdateTask | 100                 | 14.41          | 2            | 1                                    | 14.41                                   |
-| knobUpdateTask    | 50                  | 11.72          | 3            | 2                                    | 23.44                                   |
-| handshakeTask     | 50                  | 46.28          | 1            | 2                                    | 92.56                                   |
-| decodeTask        | 25                  | 24.78          | 6            | 4                                    | 99.12                                   |
-| modeSwitchTask    | 50                  | 27.78          | 4            | 2                                    | 55.56                                   |
-| transmitTask      | 25                  | 110.09         | 7            | 4                                    | 440.36                                  |
-| sawtoothwaveISR   | 1/22                | 16.13          | -            | 2200                                 | 35486                                   |
-| sinewaveISR       | 1/10                | 51.22          | -            | 1000                                 | 51220                                   |
-| trianglewaveISR   | 1/22                | 15.72          | -            | 2200                                 | 34584                                   |
-|                   |                     |                |              | Total                                | 51945μs                                 |
+| Task              | Initiation Interval | Execution Time | RMS Priority | $\lceil \frac{\tau_n}{\tau_i} \rceil$ | $\lceil \frac{\tau_n}{\tau_i} \rceil {T_i}$ | $\frac{T_i}{\tau_i}$ |
+|-------------------|---------------------|----------------|--------------|--------------------------------------|-----------------------------------------|------------|
+| displayUpdateTask | 100                 | 14.41          | 2            | 1                                    | 14.41                                   | 0.1441           |
+| knobUpdateTask    | 50                  | 11.72          | 3            | 2                                    | 23.44                                   | 0.2344           |
+| handshakeTask     | 50                  | 46.28          | 1            | 2                                    | 92.56                                   | 0.9256           |
+| decodeTask        | 25                  | 24.78          | 6            | 4                                    | 99.12                                   | 0.9912           |
+| modeSwitchTask    | 50                  | 27.78          | 4            | 2                                    | 55.56                                   | 0.5556           |
+| transmitTask      | 25                  | 110.09         | 7            | 4                                    | 440.36                                  | 4.4036           |
+| sawtoothwaveISR   | 1/22                | 16.13          | -            | 2200                                 | 35486                                   | 354.86           |
+| sinewaveISR       | 1/10                | 51.22          | -            | 1000                                 | 51220                                   | 512.20           |
+| trianglewaveISR   | 1/22                | 15.72          | -            | 2200                                 | 34584                                   | 345.84           |
+|                   |                     |                |              | Total                                | 51945μs                                 | 0.51945          |
+                               |
 
 ## Sharing & security of data
 
