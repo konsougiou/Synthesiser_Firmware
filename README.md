@@ -227,12 +227,12 @@ uint8_t RX_Message[8];\
 SemaphoreHandle_t keyArrayMutex:\
   uint8_t keyArray[7];
 
-`SemaphoreHandle_t stepSizesMutex:\
+SemaphoreHandle_t stepSizesMutex:\
   uint32_t currentStepSizes[36];\
   uint32_t prevStepSizes[36];\
   uint32_t decayCounters[36];\
   uint32_t internalCounters[36];\
-  uint32_t stepSizes[12];`
+  uint32_t stepSizes[12];
 
 
 SemaphoreHandle_t queueReceiveMutex:\
