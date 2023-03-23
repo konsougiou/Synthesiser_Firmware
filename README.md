@@ -25,6 +25,15 @@ The reverb level can be swiped from 0 to 2.
 The pitch setting can take values from 0 to 2 for the sawtooth and triangle waves (it increases the octave of each keyboard by one) and from 1 to 0 
 fot the sine wave (the sinewave ISR sampling rate was smaller and thus couldn't detect some of the frequencies from the highest Octave)
 
+## How to measure Execution Time
+
+1. Switch to PERFORMANCE branch
+2. Remove definition of #ifndef of task to be tested (e.g remove "#define DISABLE_DECODE_THREAD" to test the decodeTask)
+3. Flash code to synthesizer
+4. Go into serial monitor and press reset button
+5. The execution time of the task should print in the serial monitor
+6. Make sure to readd definition removed and repeat for other tasks
+
 ## Tasks
 
 ### keyDetect Task
@@ -48,7 +57,8 @@ A new message was sent only if a key change was detected (at least one pressed <
 
 #### Time Performance
 Worst runtime: 110.09 μs \
-Minimum initiation interval: 0.2 ms
+Minimum initiation interval: 0.2 ms\
+Task execution time: 440.36 μs
 
 ### Decode Thread
 #### Technical Overview
@@ -57,7 +67,7 @@ settings consistent throughout all keyboards.
 #### Time Performance
 Worst runtime: 24.78 μs\
 Minimum initiation interval: 0.2 ms\
-Task execution time: 49.56 μs
+Task execution time: 99.12 μs
 
 ### Display Thread
 #### Technical Overview
@@ -73,7 +83,7 @@ This task checks the `keyArray` to see whether there has been a detection of a k
 #### Time Performance
 Worst runtime: 46.28 μs\
 Minimum initiation interval: 0.4 ms\
-Task execution time: 46.28 μs
+Task execution time: 92.56 μs
 
 ### Knob Update Task
 #### Technical Overview
@@ -93,7 +103,7 @@ index | information
 #### Time Performance
 Worst runtime: 11.72 μs\
 Minimum initiation interval: 0.4 ms\
-Task execution time: 11.72 μs
+Task execution time: 23.44 μs
 
 ### Mode Switch Task
 #### Technical Overview
@@ -101,7 +111,7 @@ This task reads the current waveform mode that is set for all keyboards. This in
 #### Time Performance
 Worst runtime: 27.78 μs\
 Minimum initiation interval: 0.4 ms\
-Task execution time: 27.78 μs
+Task execution time: 55.56 μs
 
 ## CAN ISRs
 
@@ -145,7 +155,9 @@ For the delay/reverb effect, the accumulator read the `previousStepSizes` array 
 As mentioned above, slow operation were avoided inside this ISR, and especially in the loop that iterates over the 36 different notes (i.e current step sizes). For example, the modulo operator was performed using a binary AND, and was only done using powers of two (`x % (2^n) <=> x & (2^n - 1)`).
 
 #### Time Performance
-Worst runtime: 16.13 μs
+Worst runtime: 16.13 μs\
+ISR execution time: 35486 μs 
+
 
 ### trianglewaveISR
 
@@ -155,8 +167,9 @@ This ISR was activated when the waveform was set to triangle wave. Its operation
 Firstly, a state was kept for each of the notes (using a 36 `uint32_t` array) which indicated whether its waveform had an upward or a downward slope at the time. Additionally, the current step sizes were multiplied by 2 (using a bitshift) since in order to achieve the same period as the sawtooth wave,
 the transition from 0 to 255 had to happen twice as fast (since it also had to go back to 0 in a period).
 
-#### Time Prformance
+#### Time Performance
 Worst runtime: 15.72 μs
+ISR execution time: 34584 μs
 
 ### sinewaveISR
 #### Technical Overview
@@ -165,17 +178,66 @@ These are used to calculate the sine function at each time instance. A static ti
 
 #### Time Performance
 Worst runtime: 51.22 μs
+ISR execution time: 51220 μs
 
 ## Knob Class
 ### Description
 
 ## Other technical analysis
 
-### Rate monotonic scheduler
+### Rate monotonic scheduler (critical instant analysis)
 
 ### Total CPU utilisation
 
 ## Sharing & security of data
+
+Data structures that were accessed by more that one task or ISR were defined in a globals.cpp file
+All `int` and `uint` globals were declared as volatile and were only written and read to uing atomic load and store operations
+
+Global array accesses in tasks were done using semaphores. They were loaded into local arrays inside a semahpore, and stored into again
+using a semaphore. When the whole array was going to be loaded/stored into this was all done in a single semaphore, rather than doing it for every item individually. This resulted to less overheads when taking and giving the semaphores.
+
+Some semaphores were used for mulitple accessing mutliple arrays, since some arrays are very commonly accessed simultaneously in the same loops.
+
+The following is a list of all the shared variables and data structures that we used, along with any semaphore that was used for safe acces and modification:
+
+When it came to the knob instances, all methods perform all their internal operations atomically, so there was no need for atomic operations or mutexes when calling their methods in different tasks.
+
+uint32_t interval; // Display update interval
+
+bool pressOrReceive; // False == Receive, True == Press
+
+QueueHandle_t msgInQ;
+QueueHandle_t msgOutQ;
+
+uint8_t volume;
+uint8_t pitch;
+uint8_t mode;
+uint8_t reverb;
+uint8_t westDetect;
+uint8_t eastDetect;
+uint8_t localOctave;
+bool middleKeyboardFound;
+
+uint32_t decayCounters[36];
+uint32_t internalCounters[36];
+uint32_t stepSizes[12];
+uint32_t note_frequencies[12];
+double periods[12];
+uint32_t currentStepSizes[36];
+uint32_t prevStepSizes[36];
+uint8_t keyArray[7];
+
+uint8_t RX_Message[8];
+uint8_t TX_Message[8];
+
+SemaphoreHandle_t keyArrayMutex;
+
+SemaphoreHandle_t queueReceiveMutex;
+SemaphoreHandle_t stepSizesMutex;
+SemaphoreHandle_t decodeStepSizesMutex;
+
+SemaphoreHandle_t CAN_TX_Semaphore;
 
 ### Shared data structures & access methods
 
