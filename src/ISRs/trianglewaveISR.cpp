@@ -17,7 +17,7 @@ void trianglewaveISR()
     Vout = 0;
     if(currentStepSizes[z]==0){
       if(prevStepSizes[z] != 0 && reverb){
-        if (decayCounters[z] == 22000){
+        if (decayCounters[z] == 16384){
           decayCounters[z] = 0; 
           prevStepSizes[z] = 0;
           internalCounters[z] = 0;
@@ -25,8 +25,8 @@ void trianglewaveISR()
         }
 
         decayCounters[z] += 1; 
-
-        if (decayCounters[z] % (2750 * reverb) == 0){
+        // using bitwise AND instead of modulo since "reverb << 11" is a power of 2
+        if ((decayCounters[z] & ((reverb << 11) - 1)) == 0){
           internalCounters[z] += 1;
         }
         slopeSign = slopeSigns[z]; 

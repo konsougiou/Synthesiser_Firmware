@@ -7,7 +7,7 @@
 
 /*
 CAN Format [8 bytes] (For key press):
-0: KeyChange (Boolean Value)
+0: 0 (representing keychange)
 1: First 4 keys
 2: Second 4 keys
 3: Last 4 keys
@@ -20,9 +20,9 @@ CAN Format [8 bytes] (For key press):
 
 /*
 CAN Format [8 bytes]  (For knob change):
-0: KeyChange (Boolean Value) 
+0: 1 (representing knob rotation) 
 1: Reverb
-2: Knob2Rotation (Pitch)
+2: Pitch
 3: mode 
 4: 
 5: 

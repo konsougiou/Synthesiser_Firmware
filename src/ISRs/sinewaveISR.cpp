@@ -34,7 +34,7 @@ void sinewaveISR()
           }
 
         decayCounters[i] += 1; 
-      
+        // using bitwise AND instead of modulo since "reverb << 8" is a power of 2 
         if((decayCounters[i] & ((reverb << 8) - 1)) == 0){
           internalCounters[i] += 1;
         } 
