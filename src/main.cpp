@@ -3,6 +3,8 @@
 #include "tasks/tasks.hpp"
 #include "ISRs/ISRs.hpp"
 #include "utils/utils.hpp"
+#define DISABLE_ISR_SAWTOOTH
+#define DISABLE_ISR_TRIANGLE
 //#include "knob.hpp"
 
 /*
@@ -70,20 +72,24 @@ void setup()
   //HardwareTimer *sampleTimer = new HardwareTimer(Instance);
 
   // Initialise UART
-  #ifndef DISABLE_ISR_ATTACH
+  #ifndef DISABLE_ISR_SAWTOOH
   sawtoothwaveSampleTimer->setOverflow(22000, HERTZ_FORMAT);
   sawtoothwaveSampleTimer->attachInterrupt(sawtoothwaveISR);
   sawtoothwaveSampleTimer->resume();
+  #endif
 
+  #ifndef DISABLE_ISR_TRIANGLE
   trianglewaveSampleTimer->setOverflow(22000, HERTZ_FORMAT);
   trianglewaveSampleTimer->attachInterrupt(trianglewaveISR);
+  #endif
 
+  #ifndef DISABLE_ISR_SINE
   sinewaveSampleTimer->setOverflow(10000, HERTZ_FORMAT);
   sinewaveSampleTimer->attachInterrupt(sinewaveISR);
   #endif
   
-  #ifndef DISABLE_THREADS
-
+  
+  #ifndef DISABLE_TRANSMIT_THREAD
   TaskHandle_t transmitHandle = NULL;
   xTaskCreate(
       transmitTask,       /* Function that implements the task */
@@ -92,6 +98,7 @@ void setup()
       NULL,               /* Parameter passed into the task */
       2,                  /* Task priority */
       &transmitHandle);
+  #endif
 
   TaskHandle_t displayUpdateHandle = NULL;
   xTaskCreate(
@@ -110,8 +117,6 @@ void setup()
       NULL,               /* Parameter passed into the task */
       2,                  /* Task priority */
       &decodeTaskHandle);
-
-  #endif
 
   TaskHandle_t CAN_TX_TaskHandle = NULL;
   xTaskCreate(
@@ -171,13 +176,33 @@ void setup()
   // Serial.println("hey");
 
   // vTaskStartScheduler();
+  #ifndef DISABLE_ISR_SAWTOOTH
+    uint32_t startTime = micros();
+    for (int iter = 0; iter < 32; iter++) {
+      sawtoothwaveISR();
+    }
+    Serial.println("sawtoothwaveISR exec time: "+micros()-startTime);
+    while(1);
+  #endif
 
-	uint32_t startTime = micros();
-	for (int iter = 0; iter < 32; iter++) {
-		CAN_TX_Task(NULL);
-	}
-	Serial.println(micros()-startTime);
-	while(1);
+  #ifndef DISABLE_ISR_TRIANGLE
+    uint32_t startTime = micros();
+    for (int iter = 0; iter < 32; iter++) {
+      triangelwaveISR();
+    }
+    Serial.println("trianglewaveISR exec time: "+micros()-startTime);
+    while(1);
+  #endif
+
+  #ifndef DISABLE_ISR_SINE
+    uint32_t startTime = micros();
+    for (int iter = 0; iter < 32; iter++) {
+      sinewaveISR();
+    }
+    Serial.print("sinewaveISR exec time: ");
+    Serial.println(micros()-startTime);
+    while(1);
+  #endif
 }
 
 void loop()
