@@ -168,7 +168,7 @@ Firstly, a state was kept for each of the notes (using a 36 `uint32_t` array) wh
 the transition from 0 to 255 had to happen twice as fast (since it also had to go back to 0 in a period).
 
 #### Time Performance
-Worst runtime: 15.72 μs
+Worst runtime: 15.72 μs\
 ISR execution time: 34584 μs
 
 ### sinewaveISR
@@ -177,11 +177,8 @@ This ISR was activated when the waveform was set to sine wave. This interrupt op
 These are used to calculate the sine function at each time instance. A static timer was thus used, which was incremented in each call of the interrupt by 0.1 ms (1 over the frequency with which it was called). Initially, both the `"cmath"` `std::sin()` function and a lookup table were tested. The former was too slow to support polyphony, and the latter produced lower quality sound. The implementation that was found to have a good balance of performance and quality was the `"arm_math.h"` library `arm_sin_f32()` function which effectivly utilizes the FPU found in the Arm Cortex-M4 core. This proved performant enough to support both polyphony and delay, as well as smooth output.
 
 #### Time Performance
-Worst runtime: 51.22 μs
+Worst runtime: 51.22 μs\
 ISR execution time: 51220 μs
-
-
-## Other technical analysis
 
 ### Timing Analysis
 
@@ -247,7 +244,5 @@ SemaphoreHandle_t stepSizesMutex;
 SemaphoreHandle_t decodeStepSizesMutex;
 
 SemaphoreHandle_t CAN_TX_Semaphore;
-
-### Shared data structures & access methods
 
 ### Data access analysis & assessment of deadlock possibility
