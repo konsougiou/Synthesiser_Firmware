@@ -205,10 +205,7 @@ The following is a list of all the shared variables and data structures that we 
 
 When it came to the knob instances, all methods perform all their internal operations atomically, so there was no need for atomic operations or mutexes when calling their methods in different tasks.
 
-uint32_t interval; // Display update interval
-
-bool pressOrReceive; // False == Receive, True == Press
-
+Thread safe queues from FreeRTOS:\
 QueueHandle_t msgInQ;\
 QueueHandle_t msgOutQ;
 
